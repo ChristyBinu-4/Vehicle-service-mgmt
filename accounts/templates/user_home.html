@@ -1,0 +1,125 @@
+{% extends "user_sidebar.html" %}
+{% block content %}
+
+<main class="flex-grow-1 p-4">
+
+    <header class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="fw-bold">User Home</h2>
+
+        <!-- Search Bar -->
+        <form method="GET" action="{% url 'user_search' %}">
+            <div class="position-relative" style="width: 280px;">
+                <span class="material-symbols-outlined position-absolute top-50 start-0 translate-middle-y ms-2 text-secondary">search</span>
+                <input type="text" name="q" class="form-control ps-5" placeholder="Search services...">
+            </div>
+        </form>
+    </header>
+
+    <!-- Welcome Section -->
+    <div class="bg-white p-4 rounded shadow-sm mb-4">
+        <h4 class="fw-semibold">Welcome back, {{ user_name }}!</h4>
+        <p class="text-muted mb-0">Here's a quick overview of your account.</p>
+    </div>
+
+    <!-- Available Services -->
+    <div class="bg-white p-4 rounded shadow-sm mb-4">
+        <h5 class="fw-semibold mb-3">Available services & work types</h5>
+
+        <div class="row g-3">
+
+            {% for work in services %}
+            <div class="col-md-4">
+                <a href="{% url 'user_search' %}?category={{ work }}" style="text-decoration:none; color:inherit;">
+                    <div class="service-card">
+                        <h6 class="fw-bold">{{ work }}</h6>
+                        <p class="text-muted mb-0">Click to explore</p>
+                    </div>
+                </a>
+            </div>
+            {% endfor %}
+
+        </div>
+    </div>
+
+  <!-- Work Progress Section -->
+<div class="bg-white p-4 rounded shadow-sm mb-4">
+    <h5 class="fw-semibold mb-3">Latest Work Progress</h5>
+
+    <div class="row g-3">
+        {% for wp in work_list %}
+        <div class="col-md-4">
+            <div class="p-3 border rounded shadow-sm bg-light">
+                <h6 class="fw-bold">{{ wp.work_type }}</h6>
+                <p class="text-muted small">{{ wp.description|truncatewords:10 }}</p>
+
+                <span class="
+                    badge
+                    {% if wp.status == 'Completed' %} bg-success
+                    {% elif wp.status == 'In Progress' %} bg-warning
+                    {% else %} bg-secondary {% endif %}
+                ">
+                    {{ wp.status }}
+                </span>
+
+                <p class="text-muted small mt-2 mb-0">Updated: {{ wp.updated_at|date:"M d, Y" }}</p>
+            </div>
+        </div>
+        {% empty %}
+        <p class="text-muted">No work progress available.</p>
+        {% endfor %}
+    </div>
+</div>
+
+<!-- Contact Details -->
+<div class="bg-white p-4 rounded shadow-sm mb-4">
+    <h5 class="fw-semibold">Contact & Support</h5>
+    <p class="text-muted">Connect with us anytime.</p>
+
+    <div class="d-flex gap-3 flex-wrap">
+        <a href="https://instagram.com" target="_blank" class="btn btn-outline-danger">Instagram</a>
+        <a href="https://facebook.com" target="_blank" class="btn btn-outline-primary">Facebook</a>
+        <a href="https://wa.me/1234567890" target="_blank" class="btn btn-outline-success">WhatsApp</a>
+        <a href="mailto:support@servicehub.com" class="btn btn-outline-dark">Email</a>
+    </div>
+
+    <hr>
+
+    <button type="button" 
+        class="btn btn-secondary mt-2"
+        data-bs-toggle="modal"
+        data-bs-target="#feedbackModal">
+    Give Us Feedback
+</button>
+
+</div>
+
+<!-- FEEDBACK MODAL POPUP -->
+<div class="modal fade" id="feedbackModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+
+      <form method="POST">
+        {% csrf_token %}
+        <div class="modal-header">
+            <h5 class="modal-title">Submit Feedback</h5>
+            <button class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+
+        <div class="modal-body">
+            <textarea name="feedback_message" class="form-control" rows="4" placeholder="Write your feedback..."></textarea>
+        </div>
+
+        <div class="modal-footer">
+            <button class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+            <button class="btn btn-primary">Send</button>
+        </div>
+      </form>
+
+    </div>
+  </div>
+</div>
+
+
+</main>
+
+{% endblock %}
