@@ -1,32 +1,95 @@
+{% load static %}
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <title>User Registration</title>
+    <meta charset="UTF-8" />
+    <title>Create Account</title>
 
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="{% static 'accounts/style.css' %}">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
 </head>
 
 <body class="bg-light">
 
-<div class="container d-flex justify-content-center align-items-center min-vh-100">
+<div class="container d-flex justify-content-center align-items-center min-vh-100 px-3">
 
-    <div class="col-lg-4 col-md-6 col-sm-10 login-card">
+    <div class="col-lg-6 col-md-8 col-sm-10 login-card position-relative">
 
         <h3 class="fw-bold text-center mb-4">Create Account</h3>
 
         {% if messages %}
-        {% for message in messages %}
-        <div class="alert alert-{{ message.tags }} alert-dismissible fade show">
-            {{ message }}
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-        </div>
-        {% endfor %}
+            {% for message in messages %}
+            <div class="alert alert-{{ message.tags }} alert-dismissible fade show">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+            {% endfor %}
         {% endif %}
 
-        <form method="POST">
+        <form method="POST" novalidate id="registerForm">
             {% csrf_token %}
-            {{ form.as_p }}
+
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label class="form-label">First Name</label>
+                    <input type="text" name="first_name" id="first_name" class="form-control" required>
+                    <div class="invalid-feedback small" id="first_name_error"></div>
+                </div>
+
+                <div class="col-md-6 mb-3">
+                    <label class="form-label">Last Name</label>
+                    <input type="text" name="last_name" id="last_name" class="form-control" required>
+                    <div class="invalid-feedback small" id="last_name_error"></div>
+                </div>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">Username</label>
+                <input type="text" name="username" id="username" class="form-control" required>
+                <div class="invalid-feedback small" id="username_error"></div>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">Email</label>
+                <input type="email" name="email" id="email" class="form-control" required>
+                <div class="invalid-feedback small" id="email_error"></div>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">Phone Number</label>
+                <input type="text" name="phone" id="phone" maxlength="10" class="form-control" required>
+                <div class="invalid-feedback small" id="phone_error"></div>
+            </div>
+
+            <div class="mb-3 position-relative" style="min-height:80px;">
+                <div class="d-flex justify-content-between align-items-center">
+                    <label class="form-label mb-1">Password</label>
+                    <!-- keep your 'i' icon if you like (optional) -->
+                    <span class="info-icon" id="infoButton" title="Password rules">i</span>
+                </div>
+
+                <input type="password" name="password1" id="password1" class="form-control" required autocomplete="new-password">
+                <div class="invalid-feedback small" id="password1_error"></div>
+
+                <!-- Side-floating panel (hidden by default) -->
+                <div id="password-rules-box" class="password-rules-box">
+                  <div class="fw-semibold mb-1">Password requirements:</div>
+                  <ul class="list-unstyled mb-1">
+                      <li id="rule-length"  class="rule-item invalid">✖ Minimum 8 characters</li>
+                      <li id="rule-upper"   class="rule-item invalid">✖ At least one uppercase letter</li>
+                      <li id="rule-lower"   class="rule-item invalid">✖ At least one lowercase letter</li>
+                      <li id="rule-number"  class="rule-item invalid">✖ At least one number</li>
+                  </ul>
+              </div>
+
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">Confirm Password</label>
+                <input type="password" name="password2" id="password2" class="form-control" required autocomplete="new-password">
+                <div class="invalid-feedback small" id="password2_error"></div>
+            </div>
 
             <button type="submit" class="btn btn-primary w-100">Register</button>
         </form>
@@ -38,6 +101,151 @@
     </div>
 
 </div>
+
+<!-- JS: Bootstrap bundle -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  // Element refs
+  const pwInput = document.getElementById('password1');
+  const pw2Input = document.getElementById('password2');
+  const pwRulesBox = document.getElementById('password-rules-box');
+
+  // Rule elements and their base text (so we don't prepend repeatedly)
+  const rules = {
+    length: { el: document.getElementById('rule-length'), text: null },
+    upper:  { el: document.getElementById('rule-upper'),  text: null },
+    lower:  { el: document.getElementById('rule-lower'),  text: null },
+    number: { el: document.getElementById('rule-number'), text: null },
+  };
+  Object.values(rules).forEach(r => { if (r.el) r.text = r.el.textContent.replace(/^[✔✖]\s*/, '').trim(); });
+
+  // helpers to mark inputs
+  function markValid(el) {
+    el.classList.remove('is-invalid'); el.classList.add('is-valid');
+    const err = document.getElementById(el.id + '_error'); if (err) err.textContent = '';
+  }
+  function markInvalid(el, msg) {
+    el.classList.remove('is-valid'); el.classList.add('is-invalid');
+    const err = document.getElementById(el.id + '_error'); if (err) err.textContent = msg || '';
+  }
+  function clearValidation(el) {
+    el.classList.remove('is-valid','is-invalid');
+    const err = document.getElementById(el.id + '_error'); if (err) err.textContent = '';
+  }
+
+  // password rule checker
+  function checkPasswordRules(pw) {
+    return {
+      length: pw.length >= 8,
+      upper: /[A-Z]/.test(pw),
+      lower: /[a-z]/.test(pw),
+      number: /[0-9]/.test(pw)
+    };
+  }
+
+  function updateRulesUI(pw) {
+    const checks = checkPasswordRules(pw);
+    updateRule('length', checks.length);
+    updateRule('upper',  checks.upper);
+    updateRule('lower',  checks.lower);
+    updateRule('number', checks.number);
+    return checks;
+  }
+
+  function updateRule(key, ok) {
+    const r = rules[key];
+    if (!r || !r.el) return;
+    // set class
+    r.el.classList.toggle('valid', ok);
+    r.el.classList.toggle('invalid', !ok);
+    // set text with single leading icon
+    r.el.textContent = (ok ? '✔ ' : '✖ ') + r.text;
+  }
+
+  // validate password field (returns boolean)
+  function validatePasswordField() {
+    const pw = pwInput.value || '';
+    const checks = updateRulesUI(pw);
+    if (!checks.length || !checks.upper || !checks.lower || !checks.number) {
+      markInvalid(pwInput, 'Password does not satisfy all requirements.');
+      return false;
+    }
+    markValid(pwInput);
+    return true;
+  }
+
+  // validate confirm password
+  function validateConfirmPasswordField() {
+    const pw = pwInput.value || '';
+    const pw2 = pw2Input.value || '';
+    if (!pw2) { markInvalid(pw2Input, 'Please confirm your password.'); return false; }
+    if (pw !== pw2) { markInvalid(pw2Input, 'Passwords do not match.'); return false; }
+    markValid(pw2Input); return true;
+  }
+
+  // Show/hide rules box (Design B)
+  function showPasswordRules() { if (pwRulesBox) pwRulesBox.style.display = 'block'; }
+  function hidePasswordRules()  {
+    if (!pwRulesBox) return;
+    setTimeout(() => {
+      if (!pwRulesBox.contains(document.activeElement) && document.activeElement !== pwInput) {
+        pwRulesBox.style.display = 'none';
+      }
+    }, 120);
+  }
+
+  // Wire events
+  if (pwInput) {
+    pwInput.addEventListener('focus', () => {
+      showPasswordRules();
+      updateRulesUI(pwInput.value || '');
+    });
+    pwInput.addEventListener('input', () => {
+      updateRulesUI(pwInput.value || '');
+      if (pwInput.value.length) validatePasswordField(); else clearValidation(pwInput);
+      if (pw2Input && pw2Input.value.length) validateConfirmPasswordField();
+    });
+    pwInput.addEventListener('blur', () => { validatePasswordField(); hidePasswordRules(); });
+  }
+
+  if (pw2Input) {
+    pw2Input.addEventListener('input', validateConfirmPasswordField);
+    pw2Input.addEventListener('blur', validateConfirmPasswordField);
+  }
+
+  if (pwRulesBox) {
+    pwRulesBox.addEventListener('mouseenter', () => { /* keep visible */ });
+    pwRulesBox.addEventListener('mouseleave', () => { if (document.activeElement !== pwInput) hidePasswordRules(); });
+  }
+
+  // Final form submit validation (assumes your form id is registerForm)
+  const form = document.getElementById('registerForm');
+  if (form) {
+    form.addEventListener('submit', function (e) {
+      let ok = true;
+      ok = validatePasswordField() && ok;
+      ok = validateConfirmPasswordField() && ok;
+      if (!ok) {
+        e.preventDefault();
+        const firstInvalid = document.querySelector('.is-invalid');
+        if (firstInvalid) firstInvalid.focus();
+      }
+    });
+  }
+
+  // If things still not working: small diagnostics (prints one-time to console)
+  setTimeout(() => {
+    // if password rule elements not found, warn
+    const missing = Object.keys(rules).filter(k => !rules[k].el);
+    if (missing.length) {
+      console.warn('Password validation: missing rule elements for:', missing);
+    }
+    if (!pwInput) console.warn('Password input with id "password1" not found.');
+    if (!pwRulesBox) console.warn('Password rules box with id "password-rules-box" not found.');
+  }, 500);
+});
+</script>
 
 </body>
 </html>

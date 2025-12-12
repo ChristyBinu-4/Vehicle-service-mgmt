@@ -7,6 +7,10 @@ class User(AbstractUser):
         ('servicer', 'Servicer'),
         ('admin', 'Admin'),
     )
+    
+    email = models.EmailField(unique=True)
+    phone = models.CharField(max_length=10)
+    
     role = models.CharField(max_length=20, choices=ROLE_CHOICES, default='user')
 
     def __str__(self):
