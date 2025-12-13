@@ -1,0 +1,26 @@
+{% extends "user_sidebar.html" %}
+{% block content %}
+
+<div class="container-fluid p-4">
+    <h3 class="fw-bold mb-4">Booking Details</h3>
+
+    <div class="bg-white p-4 rounded shadow-sm">
+        <p><strong>Service Center:</strong> {{ booking.servicer.name }}</p>
+        <p><strong>Status:</strong> {{ booking.status }}</p>
+        <p><strong>Vehicle:</strong> {{ booking.vehicle_make }} {{ booking.vehicle_model }}</p>
+        <p><strong>Work Type:</strong> {{ booking.work_type }}</p>
+
+        <h6 class="mt-3">Complaints</h6>
+        <ul>
+            {% for c in complaint_list %}
+                <li>{{ c }}</li>
+            {% endfor %}
+        </ul>
+
+        <a href="{% url 'user_work_status' %}" class="btn btn-secondary mt-3">
+            Back
+        </a>
+    </div>
+</div>
+
+{% endblock %}

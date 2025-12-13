@@ -99,9 +99,33 @@ def user_search(request):
         "selected_location": location,
     })
 
-
+@login_required
 def user_work_status(request):
-    return render(request, "user_work_status.html")
+    bookings = Booking.objects.filter(user=request.user).order_by("-created_at")
+
+    # Prepare complaints list for each booking
+    for b in bookings:
+        if b.complaints:
+            b.complaint_list = b.complaints.split(" || ")
+        else:
+            b.complaint_list = []
+
+    return render(request, "user_work_status.html", {
+        "bookings": bookings
+    })
+    
+@login_required
+def booking_detail(request, booking_id):
+    booking = Booking.objects.get(id=booking_id, user=request.user)
+
+    complaint_list = booking.complaints.split(" || ") if booking.complaints else []
+
+    return render(request, "booking_detail.html", {
+        "booking": booking,
+        "complaint_list": complaint_list,
+    })
+
+
 
 def user_payment(request):
     return render(request, "user_payment.html")
@@ -140,7 +164,6 @@ def book_service(request, servicer_id):
         "fuel_types": fuel_types,
         "data": session_data,
     })
-
 @login_required
 def booking_confirm(request):
     data = request.session.get("booking_data")
@@ -162,18 +185,20 @@ def booking_confirm(request):
             work_type=data["work_type"],
             preferred_date=data["preferred_date"],
             complaints=data["complaints"],
+            status="Requested"
         )
 
+        # 🔥 Clear session only AFTER saving
         del request.session["booking_data"]
+
         messages.success(request, "Service request sent successfully!")
         return redirect("user_work_status")
 
     return render(request, "booking_confirm.html", {
         "data": data,
         "servicer": servicer,
-        "complaint_list": data["complaints"].split(" || ") if data["complaints"] else [],
+        "complaint_list": data["complaints"].split(" || ")
     })
-
 
 
 def user_logout(request):
