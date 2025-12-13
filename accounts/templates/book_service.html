@@ -4,6 +4,7 @@
 <div class="container-fluid p-4">
 
     <h3 class="fw-bold mb-4">Book Service</h3>
+    <form method="POST" enctype="multipart/form-data">
 
     <div class="row g-4">
 
@@ -13,43 +14,49 @@
 
                 <h5 class="fw-semibold mb-3">Vehicle & Owner Details</h5>
 
-                <form method="POST" enctype="multipart/form-data">
+                
                     {% csrf_token %}
 
                     <div class="row g-3">
                         <div class="col-md-6">
                             <label class="form-label">Vehicle Make</label>
-                            <input type="text" name="vehicle_make" class="form-control" required>
+                            <input type="text" name="vehicle_make" class="form-control" value="{{ data.vehicle_make|default:'' }}">
                         </div>
 
                         <div class="col-md-6">
                             <label class="form-label">Vehicle Model</label>
-                            <input type="text" name="vehicle_model" class="form-control" required>
+                            <input type="text" name="vehicle_model" class="form-control"
+                                  value="{{ data.vehicle_model|default:'' }}">
                         </div>
 
                         <div class="col-md-6">
                             <label class="form-label">Owner Name</label>
-                            <input type="text" name="owner_name" class="form-control" required>
+                            <input type="text" name="owner_name" class="form-control"
+                             value="{{ data.owner_name|default:'' }}">
                         </div>
 
                         <div class="col-md-6">
                             <label class="form-label">Fuel Type</label>
                             <select name="fuel_type" class="form-select">
-                                <option>Petrol</option>
-                                <option>Diesel</option>
-                                <option>Electric</option>
-                                <option>Hybrid</option>
+                                {% for f in fuel_types %}
+                                <option value="{{ f }}" {% if data.fuel_type == f %}selected{% endif %}>
+                                    {{ f }}
+                                </option>
+                                {% endfor %}
                             </select>
                         </div>
 
                         <div class="col-md-6">
                             <label class="form-label">Manufacturing Year</label>
-                            <input type="number" name="year" class="form-control" required>
+                            <input type="number" name="year" class="form-control"
+                              value="{{ data.year|default:'' }}">
                         </div>
 
                         <div class="col-md-6">
                             <label class="form-label">Vehicle Number</label>
-                            <input type="text" name="vehicle_number" class="form-control" required>
+                            <input type="text" name="vehicle_number" class="form-control"
+                                  value="{{ data.vehicle_number|default:'' }}">
+
                         </div>
 
                         <div class="col-md-12">
@@ -70,20 +77,26 @@
                 <div class="mb-3">
                     <label class="form-label">Service Center</label>
                     <input type="text" class="form-control" value="{{ servicer.name }}" disabled>
+                    <input type="hidden" name="servicer_id" value="{{ servicer.id }}">
+
                 </div>
 
                 <div class="mb-3">
                     <label class="form-label">Type of Work</label>
                     <select name="work_type" class="form-select">
                         {% for work in work_types %}
-                        <option value="{{ work }}">{{ work }}</option>
+                        <option value="{{ work }}" {% if data.work_type == work %}selected{% endif %}>
+                            {{ work }}
+                        </option>
                         {% endfor %}
                     </select>
+
                 </div>
 
                 <div class="mb-3">
                     <label class="form-label">Preferred Date</label>
-                    <input type="date" name="preferred_date" class="form-control" required>
+                    <input type="date" name="preferred_date" class="form-control"
+                       value="{{ data.preferred_date|default:'' }}">
                 </div>
 
                 <div class="mb-3">
@@ -113,19 +126,24 @@
             </div>
         </div>
 
-        </form>
-
     </div>
+    </form>
 </div>
-
-
+{% if data.complaints %}
+{{ data.complaints|json_script:"complaints-data" }}
+{% endif %}
 <script>
 let complaints = [];
+
+// Restore complaints safely from Django
+const stored = document.getElementById("complaints-data");
+if (stored) {
+    complaints = JSON.parse(stored.textContent).split(" || ");
+}
 
 function addComplaint() {
     const input = document.getElementById("complaintInput");
     const text = input.value.trim();
-
     if (!text) return;
 
     complaints.push(text);
@@ -149,15 +167,20 @@ function renderComplaints() {
         li.className = "list-group-item d-flex justify-content-between align-items-center";
         li.innerHTML = `
             <span>${item}</span>
-            <button type="button" class="btn btn-sm btn-outline-danger"
-                    onclick="removeComplaint(${index})">Remove</button>
+            <button type="button"
+                    class="btn btn-sm btn-outline-danger"
+                    onclick="removeComplaint(${index})">
+                Remove
+            </button>
         `;
         list.appendChild(li);
     });
 
-    // Join complaints into one string for backend
     hiddenField.value = complaints.join(" || ");
 }
+
+// Render on page load
+renderComplaints();
 </script>
 
 {% endblock %}

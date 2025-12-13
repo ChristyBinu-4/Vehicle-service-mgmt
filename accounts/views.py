@@ -109,34 +109,71 @@ def user_payment(request):
 def user_profile(request):
     return render(request, "user_profile.html")
 
+
 @login_required
 def book_service(request, servicer_id):
     servicer = Servicer.objects.get(id=servicer_id)
+    work_types = [w.strip() for w in servicer.work_type.split(",")]
+
+    session_data = request.session.get("booking_data")
+    fuel_types = ["Petrol", "Diesel", "Electric", "Hybrid"]
+
+    if request.method == "POST":
+        # Save/update session data
+        request.session["booking_data"] = {
+            "servicer_id": servicer.id,
+            "vehicle_make": request.POST.get("vehicle_make"),
+            "vehicle_model": request.POST.get("vehicle_model"),
+            "owner_name": request.POST.get("owner_name"),
+            "fuel_type": request.POST.get("fuel_type"),
+            "year": request.POST.get("year"),
+            "vehicle_number": request.POST.get("vehicle_number"),
+            "work_type": request.POST.get("work_type"),
+            "preferred_date": request.POST.get("preferred_date"),
+            "complaints": request.POST.get("complaints"),
+        }
+        return redirect("booking_confirm")
+
+    return render(request, "book_service.html", {
+        "servicer": servicer,
+        "work_types": work_types,
+        "fuel_types": fuel_types,
+        "data": session_data,
+    })
+
+@login_required
+def booking_confirm(request):
+    data = request.session.get("booking_data")
+    if not data:
+        return redirect("user_search")
+
+    servicer = Servicer.objects.get(id=data["servicer_id"])
 
     if request.method == "POST":
         Booking.objects.create(
             user=request.user,
             servicer=servicer,
-            vehicle_make=request.POST.get("vehicle_make"),
-            vehicle_model=request.POST.get("vehicle_model"),
-            owner_name=request.POST.get("owner_name"),
-            fuel_type=request.POST.get("fuel_type"),
-            year=request.POST.get("year"),
-            vehicle_number=request.POST.get("vehicle_number"),
-            vehicle_photo=request.FILES.get("vehicle_photo"),
-            work_type=request.POST.get("work_type"),
-            preferred_date=request.POST.get("preferred_date"),
-            complaints=request.POST.get("complaints"),
+            vehicle_make=data["vehicle_make"],
+            vehicle_model=data["vehicle_model"],
+            owner_name=data["owner_name"],
+            fuel_type=data["fuel_type"],
+            year=data["year"],
+            vehicle_number=data["vehicle_number"],
+            work_type=data["work_type"],
+            preferred_date=data["preferred_date"],
+            complaints=data["complaints"],
         )
+
+        del request.session["booking_data"]
         messages.success(request, "Service request sent successfully!")
         return redirect("user_work_status")
 
-    work_types = [w.strip() for w in servicer.work_type.split(",")]
-
-    return render(request, "book_service.html", {
+    return render(request, "booking_confirm.html", {
+        "data": data,
         "servicer": servicer,
-        "work_types": work_types,
+        "complaint_list": data["complaints"].split(" || ") if data["complaints"] else [],
     })
+
 
 
 def user_logout(request):

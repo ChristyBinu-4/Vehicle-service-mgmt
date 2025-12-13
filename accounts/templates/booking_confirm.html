@@ -1,0 +1,65 @@
+{% extends "user_sidebar.html" %}
+{% block content %}
+
+<div class="container-fluid p-4">
+
+    <h3 class="fw-bold mb-4">Confirm Service Request</h3>
+
+    <div class="row g-4">
+
+        <!-- LEFT: VEHICLE & SERVICE DETAILS -->
+        <div class="col-lg-8">
+            <div class="bg-white p-4 rounded shadow-sm mb-4">
+                <h5 class="fw-semibold mb-3">Vehicle & Service Details</h5>
+
+                <p><strong>Owner Name:</strong> {{ data.owner_name }}</p>
+                <p><strong>Vehicle:</strong> {{ data.vehicle_make }} {{ data.vehicle_model }} ({{ data.year }})</p>
+                <p><strong>Fuel Type:</strong> {{ data.fuel_type }}</p>
+                <p><strong>Vehicle Number:</strong> {{ data.vehicle_number }}</p>
+                <p><strong>Type of Work:</strong> {{ data.work_type }}</p>
+                <p><strong>Preferred Date:</strong> {{ data.preferred_date }}</p>
+
+                <hr>
+
+                <h6 class="fw-semibold">Complaints</h6>
+                <ul class="list-group">
+                    {% for c in complaint_list %}
+                        <li class="list-group-item">{{ c }}</li>
+                    {% empty %}
+                        <li class="list-group-item text-muted">No complaints added</li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+
+        <!-- RIGHT: SERVICER INFO -->
+        <div class="col-lg-4">
+            <div class="bg-white p-4 rounded shadow-sm">
+                <h5 class="fw-semibold mb-3">Service Center</h5>
+
+                <p><strong>{{ servicer.name }}</strong></p>
+                <p>{{ servicer.location }}</p>
+                <p>⭐ {{ servicer.rating }}/5</p>
+                <p>{{ servicer.available_time }}</p>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- ACTION BUTTONS -->
+    <div class="d-flex justify-content-end gap-3 mt-4">
+        <a href="{% url 'book_service' servicer.id %}" class="btn btn-outline-secondary">
+            Edit
+        </a>
+
+        <form method="POST">
+            {% csrf_token %}
+            <button class="btn btn-primary px-4">
+                Send Request
+            </button>
+        </form>
+    </div>
+
+</div>
+
+{% endblock %}

@@ -11,4 +11,6 @@ urlpatterns = [
     path('profile/', views.user_profile, name="user_profile"),
     path('logout/', views.user_logout, name='logout'), 
     path("book-service/<int:servicer_id>/", views.book_service, name="book_service"),
+    path("booking-confirm/", views.booking_confirm, name="booking_confirm"),
+
 ]
