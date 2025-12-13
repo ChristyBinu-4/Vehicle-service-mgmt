@@ -1,10 +1,12 @@
 from django.shortcuts import render, redirect
 from django.contrib.auth import authenticate, login, logout
-from django.contrib import messages
 from django.contrib.auth.decorators import login_required
+from django.contrib import messages
+from django.db.models import Q
 
 from .forms import UserRegisterForm, FeedbackForm
-from .models import WorkProgress, Feedback
+from .models import Feedback, WorkProgress, Servicer, Booking
+
 
 
 from django.contrib.auth.decorators import login_required
@@ -64,8 +66,39 @@ def user_home(request):
         "work_list": work_list,
     })
 
+@login_required
 def user_search(request):
-    return render(request, "user_search.html")
+    query = request.GET.get("q", "")
+    work_type = request.GET.get("type", "")
+    location = request.GET.get("location", "")
+
+    servicers = Servicer.objects.all()
+
+    if query:
+        servicers = servicers.filter(
+            name__icontains=query
+        ) | servicers.filter(
+            work_type__icontains=query
+        )
+
+    if work_type:
+        servicers = servicers.filter(work_type=work_type)
+
+    if location:
+        servicers = servicers.filter(location__icontains=location)
+
+    work_types = Servicer.objects.values_list("work_type", flat=True).distinct()
+    locations = Servicer.objects.values_list("location", flat=True).distinct()
+
+    return render(request, "user_search.html", {
+        "servicers": servicers,
+        "work_types": work_types,
+        "locations": locations,
+        "query": query,
+        "selected_type": work_type,
+        "selected_location": location,
+    })
+
 
 def user_work_status(request):
     return render(request, "user_work_status.html")
@@ -75,6 +108,35 @@ def user_payment(request):
 
 def user_profile(request):
     return render(request, "user_profile.html")
+
+@login_required
+def book_service(request, servicer_id):
+    servicer = Servicer.objects.get(id=servicer_id)
+
+    if request.method == "POST":
+        Booking.objects.create(
+            user=request.user,
+            servicer=servicer,
+            vehicle_make=request.POST.get("vehicle_make"),
+            vehicle_model=request.POST.get("vehicle_model"),
+            owner_name=request.POST.get("owner_name"),
+            fuel_type=request.POST.get("fuel_type"),
+            year=request.POST.get("year"),
+            vehicle_number=request.POST.get("vehicle_number"),
+            vehicle_photo=request.FILES.get("vehicle_photo"),
+            work_type=request.POST.get("work_type"),
+            preferred_date=request.POST.get("preferred_date"),
+            complaints=request.POST.get("complaints"),
+        )
+        messages.success(request, "Service request sent successfully!")
+        return redirect("user_work_status")
+
+    work_types = [w.strip() for w in servicer.work_type.split(",")]
+
+    return render(request, "book_service.html", {
+        "servicer": servicer,
+        "work_types": work_types,
+    })
 
 
 def user_logout(request):

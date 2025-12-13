@@ -1,0 +1,163 @@
+{% extends "user_sidebar.html" %}
+{% block content %}
+
+<div class="container-fluid p-4">
+
+    <h3 class="fw-bold mb-4">Book Service</h3>
+
+    <div class="row g-4">
+
+        <!-- LEFT: USER + VEHICLE INFO -->
+        <div class="col-lg-7">
+            <div class="bg-white p-4 rounded shadow-sm">
+
+                <h5 class="fw-semibold mb-3">Vehicle & Owner Details</h5>
+
+                <form method="POST" enctype="multipart/form-data">
+                    {% csrf_token %}
+
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Vehicle Make</label>
+                            <input type="text" name="vehicle_make" class="form-control" required>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label">Vehicle Model</label>
+                            <input type="text" name="vehicle_model" class="form-control" required>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label">Owner Name</label>
+                            <input type="text" name="owner_name" class="form-control" required>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label">Fuel Type</label>
+                            <select name="fuel_type" class="form-select">
+                                <option>Petrol</option>
+                                <option>Diesel</option>
+                                <option>Electric</option>
+                                <option>Hybrid</option>
+                            </select>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label">Manufacturing Year</label>
+                            <input type="number" name="year" class="form-control" required>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label">Vehicle Number</label>
+                            <input type="text" name="vehicle_number" class="form-control" required>
+                        </div>
+
+                        <div class="col-md-12">
+                            <label class="form-label">Vehicle Photo</label>
+                            <input type="file" name="vehicle_photo" class="form-control">
+                        </div>
+                    </div>
+
+            </div>
+        </div>
+
+        <!-- RIGHT: SERVICE DETAILS -->
+        <div class="col-lg-5">
+            <div class="bg-white p-4 rounded shadow-sm">
+
+                <h5 class="fw-semibold mb-3">Service Details</h5>
+
+                <div class="mb-3">
+                    <label class="form-label">Service Center</label>
+                    <input type="text" class="form-control" value="{{ servicer.name }}" disabled>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Type of Work</label>
+                    <select name="work_type" class="form-select">
+                        {% for work in work_types %}
+                        <option value="{{ work }}">{{ work }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Preferred Date</label>
+                    <input type="date" name="preferred_date" class="form-control" required>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Complaints / Issues</label>
+
+                    <!-- Input + Add Button -->
+                    <div class="input-group mb-2">
+                        <input type="text" id="complaintInput" class="form-control"
+                              placeholder="Enter a complaint or issue">
+                        <button type="button" class="btn btn-outline-primary" onclick="addComplaint()">
+                            Add
+                        </button>
+                    </div>
+
+                    <!-- Complaints List -->
+                    <ul id="complaintList" class="list-group mb-2"></ul>
+
+                    <!-- Hidden field to submit complaints -->
+                    <input type="hidden" name="complaints" id="complaintsField">
+                </div>
+
+                <div class="d-flex justify-content-end gap-2">
+                    <a href="{% url 'user_search' %}" class="btn btn-outline-secondary">Cancel</a>
+                    <button class="btn btn-primary">Proceed</button>
+                </div>
+
+            </div>
+        </div>
+
+        </form>
+
+    </div>
+</div>
+
+
+<script>
+let complaints = [];
+
+function addComplaint() {
+    const input = document.getElementById("complaintInput");
+    const text = input.value.trim();
+
+    if (!text) return;
+
+    complaints.push(text);
+    input.value = "";
+    renderComplaints();
+}
+
+function removeComplaint(index) {
+    complaints.splice(index, 1);
+    renderComplaints();
+}
+
+function renderComplaints() {
+    const list = document.getElementById("complaintList");
+    const hiddenField = document.getElementById("complaintsField");
+
+    list.innerHTML = "";
+
+    complaints.forEach((item, index) => {
+        const li = document.createElement("li");
+        li.className = "list-group-item d-flex justify-content-between align-items-center";
+        li.innerHTML = `
+            <span>${item}</span>
+            <button type="button" class="btn btn-sm btn-outline-danger"
+                    onclick="removeComplaint(${index})">Remove</button>
+        `;
+        list.appendChild(li);
+    });
+
+    // Join complaints into one string for backend
+    hiddenField.value = complaints.join(" || ");
+}
+</script>
+
+{% endblock %}

@@ -1,0 +1,158 @@
+{% extends "user_sidebar.html" %}
+{% block content %}
+<style>
+    body {
+        font-family: 'Inter', sans-serif;
+        background: #F8FAFC;
+        color: #334155;
+    }
+    .card-hover:hover {
+        box-shadow: 0 6px 18px rgba(0,0,0,0.08);
+        transition: 0.3s;
+    }
+    .status-badge {
+        font-size: 0.75rem;
+        padding: 4px 10px;
+        border-radius: 20px;
+        font-weight: 500;
+    }
+</style>
+<div class="container py-4">
+
+    <!-- Page Header -->
+    <header class="mb-4">
+        <h1 class="fw-bold text-dark">Servicer Search</h1>
+        <p class="text-secondary">Find and book the best servicers for your needs.</p>
+    </header>
+
+
+    <!-- Search Box -->
+    <form method="GET" class="card shadow-sm p-4 mb-4">
+        <div class="row g-3">
+
+            <div class="col-md-7">
+                <input type="text" name="q" value="{{ query }}" class="form-control"
+                      placeholder="Search by name, skill, or service…">
+            </div>
+
+            <div class="col-md-3">
+                <select class="form-select" name="type">
+                    <option value="">All Work Types</option>
+                    {% for wt in work_types %}
+                    <option value="{{ wt }}" {% if wt == selected_type %}selected{% endif %}>
+                        {{ wt }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="col-md-2 d-grid">
+                <button class="btn btn-primary">Search</button>
+            </div>
+
+        </div>
+    </form>
+
+
+    <!-- Servicer List -->
+     <div class="d-flex flex-column gap-3">
+
+    {% for s in servicers %}
+    <div class="card p-4 shadow-sm card-hover">
+        <div class="row g-4 align-items-center">
+
+            <div class="col-auto">
+                <img src="{{ s.profile_image }}"
+                    class="rounded-circle border" width="80" height="80">
+            </div>
+
+            <div class="col">
+                <h4 class="mb-1 fw-bold">{{ s.name }}</h4>
+
+                <span class="status-badge
+                    {% if s.status == 'Available' %}bg-success-subtle text-success
+                    {% elif s.status == 'Busy' %}bg-warning-subtle text-warning
+                    {% else %}bg-danger-subtle text-danger{% endif %}">
+                    ● {{ s.status }}
+                </span>
+
+                <div class="text-secondary mt-2 small">
+                    <div>📍 {{ s.location }}</div>
+                    <div>🛠 {{ s.work_type }}</div>
+                </div>
+            </div>
+
+            <div class="col-md-4 text-center text-md-end d-grid gap-2">
+              <button class="btn btn-outline-secondary"
+                      data-bs-toggle="modal"
+                      data-bs-target="#servicerModal"
+                      onclick="showServicerDetails(
+                          '{{ s.name }}',
+                          '{{ s.location }}',
+                          '{{ s.rating }}',
+                          '{{ s.email }}',
+                          '{{ s.phone }}',
+                          '{{ s.work_type }}',
+                          '{{ s.available_time }}'
+                      )">
+                  More Details
+              </button>
+
+              <a href="{% url 'book_service' s.id %}" class="btn btn-primary">
+                  Book Service
+              </a>
+          </div>
+
+
+        </div>
+    </div>
+    {% empty %}
+    <p class="text-muted">No servicers found.</p>
+    {% endfor %}
+
+</div>
+
+</div>
+<!-- MORE DETAILS MODAL -->
+<div class="modal fade" id="servicerModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered modal-lg">
+    <div class="modal-content">
+
+      <div class="modal-header">
+        <h5 class="modal-title" id="modalName">Servicer Details</h5>
+        <button class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+
+      <div class="modal-body">
+        <p><strong>Location:</strong> <span id="modalLocation"></span></p>
+        <p><strong>Rating:</strong> ⭐ <span id="modalRating"></span>/5</p>
+        <p><strong>Contact:</strong>
+            <br>Email: <span id="modalEmail"></span>
+            <br>Phone: <span id="modalPhone"></span>
+        </p>
+        <p><strong>Work Types:</strong> <span id="modalWork"></span></p>
+        <p><strong>Available Time:</strong> <span id="modalTime"></span></p>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+      </div>
+
+    </div>
+  </div>
+</div>
+<script>
+function showServicerDetails(name, location, rating, email, phone, work, time) {
+    document.getElementById("modalName").innerText = name;
+    document.getElementById("modalLocation").innerText = location;
+    document.getElementById("modalRating").innerText = rating;
+    document.getElementById("modalEmail").innerText = email;
+    document.getElementById("modalPhone").innerText = phone;
+    document.getElementById("modalWork").innerText = work;
+    document.getElementById("modalTime").innerText = time;
+}
+</script>
+
+{% endblock %}
+
+
