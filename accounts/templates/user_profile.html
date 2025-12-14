@@ -1,0 +1,690 @@
+{% extends "user_sidebar.html" %}
+{% block content %}
+
+<style>
+    .profile-section {
+        background: #fff;
+        border-radius: 12px;
+        padding: 24px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        margin-bottom: 24px;
+    }
+    .profile-header {
+        border-bottom: 2px solid #f0f0f0;
+        padding-bottom: 16px;
+        margin-bottom: 24px;
+    }
+    .info-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        padding: 12px 0;
+        border-bottom: 1px solid #f5f5f5;
+    }
+    .info-row:last-child {
+        border-bottom: none;
+    }
+    .info-label {
+        font-weight: 600;
+        color: #555;
+        min-width: 150px;
+        padding-top: 8px;
+    }
+    .info-value {
+        color: #333;
+        flex: 1;
+        padding-top: 8px;
+    }
+    .info-value.empty {
+        color: #999;
+        font-style: italic;
+    }
+    /* Edit mode styles */
+    .edit-mode .info-value {
+        display: none !important;
+    }
+    .edit-mode .form-control {
+        display: block !important;
+    }
+    /* Hide form controls in profile section by default (for edit mode) */
+    #profileSection .form-control {
+        display: none;
+        flex: 1;
+    }
+    /* Password form controls should always be visible when password-fields is active */
+    .password-fields .form-control {
+        display: block !important;
+    }
+    .form-actions {
+        display: none !important;
+    }
+    .edit-mode .form-actions {
+        display: flex !important;
+    }
+    .edit-mode #editProfileBtn {
+        display: none !important;
+    }
+    #editProfileBtn {
+        display: block;
+    }
+    /* Password section styles */
+    .password-fields {
+        display: none !important;
+    }
+    .password-fields.active {
+        display: block !important;
+    }
+    .password-actions {
+        display: none !important;
+    }
+    .password-fields.active ~ .password-actions {
+        display: flex !important;
+    }
+    #changePasswordBtn {
+        display: block;
+    }
+    .password-fields.active ~ .password-actions ~ #changePasswordBtn,
+    .password-fields.active ~ #changePasswordBtn {
+        display: none !important;
+    }
+    .password-rules-box {
+        display: none;
+        background: #eef5ff;
+        border-radius: 8px;
+        padding: 12px 16px;
+        margin-top: 8px;
+        font-size: 14px;
+        border-left: 4px solid #0d6efd;
+    }
+    .rule-item {
+        margin: 4px 0;
+    }
+    .rule-item.valid {
+        color: #198754;
+        font-weight: 600;
+    }
+    .rule-item.invalid {
+        color: #dc3545;
+    }
+    .info-icon {
+        background-color: #007bff;
+        color: white;
+        width: 22px;
+        height: 22px;
+        display: inline-flex;
+        justify-content: center;
+        align-items: center;
+        border-radius: 50%;
+        font-weight: bold;
+        cursor: pointer;
+        font-size: 14px;
+        transition: 0.2s ease-in-out;
+        user-select: none;
+        margin-left: 8px;
+    }
+    .info-icon:hover {
+        background-color: #0056b3;
+    }
+    /* Password match validation styles */
+    #password-match-error {
+        display: none !important;
+        color: #dc3545;
+        font-size: 0.875rem;
+        margin-top: 0.25rem;
+    }
+    #password-match-error.show {
+        display: block !important;
+    }
+    #password-match-success {
+        display: none !important;
+        color: #198754;
+        font-size: 0.875rem;
+        margin-top: 0.25rem;
+    }
+    #password-match-success.show {
+        display: block !important;
+    }
+</style>
+
+<div class="container-fluid p-4">
+    <h2 class="fw-bold mb-4">Profile</h2>
+
+    <!-- Success Messages -->
+    {% if profile_success %}
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+        <strong>Success!</strong> Your profile has been updated successfully.
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+    {% endif %}
+
+    {% if password_success %}
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+        <strong>Success!</strong> Your password has been changed successfully.
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+    {% endif %}
+
+    <!-- Username and Basic Information -->
+    <div class="profile-section">
+        <div class="profile-header">
+            <h4 class="fw-bold mb-0">Username and Basic Information</h4>
+        </div>
+        <div class="info-row">
+            <span class="info-label">Username:</span>
+            <span class="info-value">{{ user.username }}</span>
+        </div>
+        <div class="info-row">
+            <span class="info-label">Role:</span>
+            <span class="info-value">{{ user.get_role_display }}</span>
+        </div>
+    </div>
+
+    <!-- Personal Information -->
+    <div class="profile-section" id="profileSection">
+        <div class="profile-header d-flex justify-content-between align-items-center">
+            <h4 class="fw-bold mb-0">Personal Information</h4>
+            <button type="button" class="btn btn-outline-primary btn-sm" id="editProfileBtn">
+                <span class="material-symbols-outlined" style="font-size: 18px; vertical-align: middle;">edit</span>
+                Edit
+            </button>
+        </div>
+
+        <form method="POST" id="profileForm">
+            {% csrf_token %}
+            <input type="hidden" name="update_profile" value="1">
+
+            <div class="info-row">
+                <span class="info-label">First Name:</span>
+                <span class="info-value">{{ user.first_name|default:"—" }}</span>
+                {{ profile_form.first_name }}
+                {% if profile_form.first_name.errors %}
+                    <div class="invalid-feedback d-block">
+                        {% for error in profile_form.first_name.errors %}
+                            {{ error }}
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            </div>
+
+            <div class="info-row">
+                <span class="info-label">Last Name:</span>
+                <span class="info-value">{{ user.last_name|default:"—" }}</span>
+                {{ profile_form.last_name }}
+                {% if profile_form.last_name.errors %}
+                    <div class="invalid-feedback d-block">
+                        {% for error in profile_form.last_name.errors %}
+                            {{ error }}
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            </div>
+
+            <div class="info-row">
+                <span class="info-label">Email:</span>
+                <span class="info-value">{{ user.email }}</span>
+                {{ profile_form.email }}
+                {% if profile_form.email.errors %}
+                    <div class="invalid-feedback d-block">
+                        {% for error in profile_form.email.errors %}
+                            {{ error }}
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            </div>
+
+            <div class="info-row">
+                <span class="info-label">Phone Number:</span>
+                <span class="info-value">{{ user.phone }}</span>
+                {{ profile_form.phone }}
+                {% if profile_form.phone.errors %}
+                    <div class="invalid-feedback d-block">
+                        {% for error in profile_form.phone.errors %}
+                            {{ error }}
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            </div>
+
+            <div class="info-row">
+                <span class="info-label">Address:</span>
+                <span class="info-value {% if not user.address %}empty{% endif %}">{{ user.address|default:"Not provided" }}</span>
+                {{ profile_form.address }}
+                {% if profile_form.address.errors %}
+                    <div class="invalid-feedback d-block">
+                        {% for error in profile_form.address.errors %}
+                            {{ error }}
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            </div>
+
+            <div class="info-row">
+                <span class="info-label">City:</span>
+                <span class="info-value {% if not user.city %}empty{% endif %}">{{ user.city|default:"Not provided" }}</span>
+                {{ profile_form.city }}
+                {% if profile_form.city.errors %}
+                    <div class="invalid-feedback d-block">
+                        {% for error in profile_form.city.errors %}
+                            {{ error }}
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            </div>
+
+            <div class="info-row">
+                <span class="info-label">State:</span>
+                <span class="info-value {% if not user.state %}empty{% endif %}">{{ user.state|default:"Not provided" }}</span>
+                {{ profile_form.state }}
+                {% if profile_form.state.errors %}
+                    <div class="invalid-feedback d-block">
+                        {% for error in profile_form.state.errors %}
+                            {{ error }}
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            </div>
+
+            <div class="info-row">
+                <span class="info-label">Pincode:</span>
+                <span class="info-value {% if not user.pincode %}empty{% endif %}">{{ user.pincode|default:"Not provided" }}</span>
+                {{ profile_form.pincode }}
+                {% if profile_form.pincode.errors %}
+                    <div class="invalid-feedback d-block">
+                        {% for error in profile_form.pincode.errors %}
+                            {{ error }}
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            </div>
+
+            <div class="d-flex gap-2 mt-3 form-actions">
+                <button type="submit" class="btn btn-primary">Save Changes</button>
+                <button type="button" class="btn btn-secondary" id="cancelEditBtn">Cancel</button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Change Password -->
+    <div class="profile-section">
+        <div class="profile-header">
+            <h4 class="fw-bold mb-0">Change Password</h4>
+        </div>
+
+        <form method="POST" id="passwordForm">
+            {% csrf_token %}
+            <input type="hidden" name="change_password" value="1">
+
+            <!-- Password fields (hidden by default) -->
+            <div class="password-fields">
+                <div class="mb-3">
+                    <label class="form-label">Current Password</label>
+                    {{ password_form.current_password }}
+                    {% if password_form.current_password.errors %}
+                        <div class="invalid-feedback d-block">
+                            {% for error in password_form.current_password.errors %}
+                                {{ error }}
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                </div>
+
+                <div class="mb-3 position-relative">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <label class="form-label mb-1">New Password</label>
+                        <span class="info-icon" id="password-info-btn" title="Show password requirements">i</span>
+                    </div>
+                    {{ password_form.new_password1 }}
+                    {% if password_form.new_password1.errors %}
+                        <div class="invalid-feedback d-block">
+                            {% for error in password_form.new_password1.errors %}
+                                {{ error }}
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+
+                    <!-- Password rules box -->
+                    <div id="password-rules-box" class="password-rules-box">
+                        <div class="fw-semibold mb-1">Password requirements:</div>
+                        <ul class="list-unstyled mb-1">
+                            <li id="rule-length" class="rule-item invalid">✖ Minimum 8 characters</li>
+                            <li id="rule-upper" class="rule-item invalid">✖ At least one uppercase letter</li>
+                            <li id="rule-lower" class="rule-item invalid">✖ At least one lowercase letter</li>
+                            <li id="rule-number" class="rule-item invalid">✖ At least one number</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Confirm New Password</label>
+                    {{ password_form.new_password2 }}
+                    <div class="invalid-feedback" id="password-match-error" style="display: none !important;">
+                        Passwords do not match.
+                    </div>
+                    <div class="valid-feedback" id="password-match-success" style="display: none !important;">
+                        ✓ Passwords match
+                    </div>
+                    {% if password_form.new_password2.errors %}
+                        <div class="invalid-feedback d-block">
+                            {% for error in password_form.new_password2.errors %}
+                                {{ error }}
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                    {% if password_form.non_field_errors %}
+                        <div class="invalid-feedback d-block">
+                            {% for error in password_form.non_field_errors %}
+                                {{ error }}
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Action buttons -->
+            <div class="d-flex gap-2 password-actions">
+                <button type="submit" class="btn btn-primary">Update Password</button>
+                <button type="button" class="btn btn-secondary" id="cancelPasswordBtn">Cancel</button>
+            </div>
+
+            <button type="button" class="btn btn-outline-primary" id="changePasswordBtn">Change Password</button>
+        </form>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Store original values for cancel functionality
+    let originalValues = {};
+
+    // Profile Edit Toggle
+    const editBtn = document.getElementById('editProfileBtn');
+    const cancelBtn = document.getElementById('cancelEditBtn');
+    const profileForm = document.getElementById('profileForm');
+    const profileSection = document.getElementById('profileSection');
+    const formActions = profileForm.querySelector('.form-actions');
+    
+    // Ensure form actions are hidden on page load
+    if (formActions) {
+        formActions.style.display = 'none';
+    }
+
+    function enterEditMode() {
+        profileSection.classList.add('edit-mode');
+        
+        // Store original values
+        profileForm.querySelectorAll('.form-control').forEach(el => {
+            const valueEl = el.closest('.info-row').querySelector('.info-value');
+            const originalValue = valueEl.textContent.trim();
+            originalValues[el.name] = originalValue === '—' || originalValue === 'Not provided' ? '' : originalValue;
+            
+            // Show form control and set value
+            el.style.display = 'block';
+            if (el.value === '' && originalValues[el.name] !== '') {
+                el.value = originalValues[el.name];
+            }
+        });
+        
+        // Ensure form actions are visible in edit mode
+        formActions.style.display = 'flex';
+    }
+
+    function exitEditMode() {
+        profileSection.classList.remove('edit-mode');
+        
+        // Restore original values
+        profileForm.querySelectorAll('.form-control').forEach(el => {
+            el.style.display = 'none';
+            if (originalValues.hasOwnProperty(el.name)) {
+                el.value = originalValues[el.name] || '';
+            }
+        });
+        
+        // Hide form actions
+        formActions.style.display = 'none';
+        
+        // Clear error messages
+        profileForm.querySelectorAll('.invalid-feedback').forEach(el => {
+            el.style.display = 'none';
+        });
+        
+        // Clear stored values
+        originalValues = {};
+    }
+
+    if (editBtn) {
+        editBtn.addEventListener('click', enterEditMode);
+    }
+
+    if (cancelBtn) {
+        cancelBtn.addEventListener('click', exitEditMode);
+    }
+
+    // Password Change Toggle
+    const changePasswordBtn = document.getElementById('changePasswordBtn');
+    const cancelPasswordBtn = document.getElementById('cancelPasswordBtn');
+    const passwordFields = document.querySelector('.password-fields');
+    const passwordActions = document.querySelector('.password-actions');
+    const passwordForm = document.getElementById('passwordForm');
+
+    function showPasswordFields() {
+        if (passwordFields) {
+            passwordFields.classList.add('active');
+            // Explicitly set display to ensure it shows
+            passwordFields.style.display = 'block';
+        }
+        // Show password action buttons
+        if (passwordActions) {
+            passwordActions.style.display = 'flex';
+        }
+        // Hide "Change Password" button
+        if (changePasswordBtn) {
+            changePasswordBtn.style.display = 'none';
+        }
+    }
+
+    function hidePasswordFields() {
+        if (passwordFields) {
+            passwordFields.classList.remove('active');
+            // Explicitly hide the password fields
+            passwordFields.style.display = 'none';
+        }
+        // Hide password action buttons
+        if (passwordActions) {
+            passwordActions.style.display = 'none';
+        }
+        // Show "Change Password" button
+        if (changePasswordBtn) {
+            changePasswordBtn.style.display = 'block';
+        }
+        // Clear password fields
+        if (passwordForm) {
+            passwordForm.querySelectorAll('input[type="password"]').forEach(el => {
+                el.value = '';
+                el.classList.remove('is-valid', 'is-invalid');
+            });
+            // Clear error messages
+            passwordForm.querySelectorAll('.invalid-feedback').forEach(el => {
+                el.style.display = 'none';
+            });
+            // Clear password match validation messages
+            if (passwordMatchError) {
+                passwordMatchError.classList.remove('show');
+            }
+            if (passwordMatchSuccess) {
+                passwordMatchSuccess.classList.remove('show');
+            }
+        }
+        // Hide password rules box
+        const pwRulesBox = document.getElementById('password-rules-box');
+        if (pwRulesBox) {
+            pwRulesBox.style.display = 'none';
+        }
+        rulesBoxVisible = false;
+    }
+
+    // Initialize: ensure buttons and fields are in correct state on page load
+    if (passwordFields) {
+        passwordFields.style.display = 'none';
+    }
+    if (passwordActions) {
+        passwordActions.style.display = 'none';
+    }
+    if (changePasswordBtn) {
+        changePasswordBtn.style.display = 'block';
+    }
+
+    if (changePasswordBtn) {
+        changePasswordBtn.addEventListener('click', showPasswordFields);
+    }
+
+    if (cancelPasswordBtn) {
+        cancelPasswordBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            hidePasswordFields();
+        });
+    }
+
+    // Password Rules Toggle
+    const passwordInfoBtn = document.getElementById('password-info-btn');
+    const pwRulesBox = document.getElementById('password-rules-box');
+    const newPasswordInput = document.getElementById('id_new_password1');
+    let rulesBoxVisible = false;
+
+    function togglePasswordRules() {
+        if (!pwRulesBox) return;
+        rulesBoxVisible = !rulesBoxVisible;
+        pwRulesBox.style.display = rulesBoxVisible ? 'block' : 'none';
+        if (rulesBoxVisible && newPasswordInput && newPasswordInput.value) {
+            updateRulesUI(newPasswordInput.value || '');
+        }
+    }
+
+    if (passwordInfoBtn) {
+        passwordInfoBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            togglePasswordRules();
+        });
+    }
+
+    // Password validation
+    const rules = {
+        length: { el: document.getElementById('rule-length'), text: 'Minimum 8 characters' },
+        upper: { el: document.getElementById('rule-upper'), text: 'At least one uppercase letter' },
+        lower: { el: document.getElementById('rule-lower'), text: 'At least one lowercase letter' },
+        number: { el: document.getElementById('rule-number'), text: 'At least one number' },
+    };
+
+    function checkPasswordRules(pw) {
+        return {
+            length: pw.length >= 8,
+            upper: /[A-Z]/.test(pw),
+            lower: /[a-z]/.test(pw),
+            number: /[0-9]/.test(pw)
+        };
+    }
+
+    function updateRulesUI(pw) {
+        const checks = checkPasswordRules(pw);
+        updateRule('length', checks.length);
+        updateRule('upper', checks.upper);
+        updateRule('lower', checks.lower);
+        updateRule('number', checks.number);
+    }
+
+    function updateRule(key, ok) {
+        const r = rules[key];
+        if (!r || !r.el) return;
+        r.el.classList.toggle('valid', ok);
+        r.el.classList.toggle('invalid', !ok);
+        r.el.textContent = (ok ? '✔ ' : '✖ ') + r.text;
+    }
+
+    // Password match validation
+    const confirmPasswordInput = document.getElementById('id_new_password2');
+    const passwordMatchError = document.getElementById('password-match-error');
+    const passwordMatchSuccess = document.getElementById('password-match-success');
+
+    function validatePasswordMatch() {
+        const newPassword = newPasswordInput ? newPasswordInput.value : '';
+        const confirmPassword = confirmPasswordInput ? confirmPasswordInput.value : '';
+        
+        // Only validate when BOTH fields have values
+        if (!newPassword || !confirmPassword) {
+            // Hide both messages if either field is empty
+            if (passwordMatchError) {
+                passwordMatchError.classList.remove('show');
+            }
+            if (passwordMatchSuccess) {
+                passwordMatchSuccess.classList.remove('show');
+            }
+            if (confirmPasswordInput) {
+                confirmPasswordInput.classList.remove('is-valid', 'is-invalid');
+            }
+            return;
+        }
+        
+        // Both fields have values, now check if they match
+        if (newPassword === confirmPassword) {
+            // Passwords match - show success, hide error
+            if (passwordMatchError) {
+                passwordMatchError.classList.remove('show');
+            }
+            if (passwordMatchSuccess) {
+                passwordMatchSuccess.classList.add('show');
+            }
+            if (confirmPasswordInput) {
+                confirmPasswordInput.classList.remove('is-invalid');
+                confirmPasswordInput.classList.add('is-valid');
+            }
+        } else {
+            // Passwords don't match - show error, hide success
+            if (passwordMatchError) {
+                passwordMatchError.classList.add('show');
+            }
+            if (passwordMatchSuccess) {
+                passwordMatchSuccess.classList.remove('show');
+            }
+            if (confirmPasswordInput) {
+                confirmPasswordInput.classList.remove('is-valid');
+                confirmPasswordInput.classList.add('is-invalid');
+            }
+        }
+    }
+
+    if (newPasswordInput) {
+        newPasswordInput.addEventListener('input', function() {
+            if (rulesBoxVisible) {
+                updateRulesUI(newPasswordInput.value || '');
+            }
+            // Check password match when new password changes
+            validatePasswordMatch();
+        });
+    }
+
+    if (confirmPasswordInput) {
+        confirmPasswordInput.addEventListener('input', function() {
+            // Check password match when confirm password changes
+            validatePasswordMatch();
+        });
+        
+        confirmPasswordInput.addEventListener('blur', function() {
+            // Validate on blur as well
+            validatePasswordMatch();
+        });
+    }
+
+    // Phone number validation - restrict to digits only
+    const phoneInput = document.getElementById('id_phone');
+    if (phoneInput) {
+        phoneInput.addEventListener('input', function(e) {
+            let value = e.target.value.replace(/\D/g, '');
+            if (value.length > 10) {
+                value = value.slice(0, 10);
+            }
+            e.target.value = value;
+        });
+    }
+});
+</script>
+
+{% endblock %}

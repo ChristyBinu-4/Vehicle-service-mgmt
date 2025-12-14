@@ -1,5 +1,5 @@
 from django.shortcuts import render, redirect, get_object_or_404
-from django.contrib.auth import authenticate, login, logout
+from django.contrib.auth import authenticate, login, logout, update_session_auth_hash
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.db.models import Q
@@ -7,7 +7,7 @@ from django.urls import reverse
 from django.http import HttpResponseRedirect
 from functools import wraps
 
-from .forms import UserRegisterForm, FeedbackForm
+from .forms import UserRegisterForm, FeedbackForm, ProfileUpdateForm, PasswordChangeForm
 from .models import Feedback, WorkProgress, Servicer, Booking
 
 
@@ -221,7 +221,45 @@ def user_payment(request):
 @login_required
 @user_role_required
 def user_profile(request):
-    return render(request, "user_profile.html")
+    """
+    Handle user profile viewing and editing.
+    - Display user profile information
+    - Allow editing of first_name, last_name, email, phone
+    - Handle password change
+    """
+    user = request.user
+    profile_form = ProfileUpdateForm(instance=user, user=user)
+    password_form = PasswordChangeForm(user=user)
+    profile_success = False
+    password_success = False
+    
+    if request.method == "POST":
+        # Check which form was submitted
+        if 'update_profile' in request.POST:
+            profile_form = ProfileUpdateForm(request.POST, instance=user, user=user)
+            if profile_form.is_valid():
+                profile_form.save()
+                profile_success = True
+                # Re-instantiate form with updated data
+                profile_form = ProfileUpdateForm(instance=user, user=user)
+        
+        elif 'change_password' in request.POST:
+            password_form = PasswordChangeForm(request.POST, user=user)
+            if password_form.is_valid():
+                password_form.save()
+                password_success = True
+                # Re-instantiate form
+                password_form = PasswordChangeForm(user=user)
+                # Update session to keep user logged in after password change
+                update_session_auth_hash(request, user)
+    
+    return render(request, "user_profile.html", {
+        'user': user,
+        'profile_form': profile_form,
+        'password_form': password_form,
+        'profile_success': profile_success,
+        'password_success': password_success,
+    })
 
 
 @login_required

@@ -38,6 +38,35 @@ class User(AbstractUser):
         default='USER',
         verbose_name='user role'
     )
+    
+    # Address fields (nullable, optional)
+    address = models.TextField(
+        blank=True,
+        null=True,
+        verbose_name='address',
+        help_text='Street address'
+    )
+    
+    city = models.CharField(
+        max_length=100,
+        blank=True,
+        null=True,
+        verbose_name='city'
+    )
+    
+    state = models.CharField(
+        max_length=100,
+        blank=True,
+        null=True,
+        verbose_name='state'
+    )
+    
+    pincode = models.CharField(
+        max_length=10,
+        blank=True,
+        null=True,
+        verbose_name='pincode'
+    )
 
     def __str__(self):
         return self.username
