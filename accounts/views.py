@@ -1,4 +1,4 @@
-from django.shortcuts import render, redirect
+from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
@@ -118,12 +118,17 @@ def user_work_status(request):
 def booking_detail(request, booking_id):
     booking = Booking.objects.get(id=booking_id, user=request.user)
 
+    # Work progress timeline
+    progress = WorkProgress.objects.filter(booking=booking).order_by("updated_at")
+
     complaint_list = booking.complaints.split(" || ") if booking.complaints else []
 
     return render(request, "booking_detail.html", {
         "booking": booking,
+        "progress": progress,
         "complaint_list": complaint_list,
     })
+
 
 
 
@@ -198,6 +203,24 @@ def booking_confirm(request):
         "data": data,
         "servicer": servicer,
         "complaint_list": data["complaints"].split(" || ")
+    })
+
+
+@login_required
+def diagnosis_detail(request, booking_id):
+    booking = get_object_or_404(Booking, id=booking_id, user=request.user)
+
+    if booking.status != "Pending":
+        messages.error(request, "Diagnosis is not available yet.")
+        return redirect("user_work_status")
+
+    if not hasattr(booking, "diagnosis"):
+        messages.error(request, "Diagnosis report not submitted yet.")
+        return redirect("user_work_status")
+
+    return render(request, "diagnosis_detail.html", {
+        "booking": booking,
+        "diagnosis": booking.diagnosis
     })
 
 

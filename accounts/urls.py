@@ -15,4 +15,5 @@ urlpatterns = [
     path("work-status/", views.user_work_status, name="user_work_status"),
     path("booking/<int:booking_id>/", views.booking_detail, name="booking_detail"),
 
+
 ]

@@ -2,24 +2,175 @@
 {% block content %}
 
 <div class="container-fluid p-4">
-    <h3 class="fw-bold mb-4">Booking Details</h3>
 
-    <div class="bg-white p-4 rounded shadow-sm">
-        <p><strong>Service Center:</strong> {{ booking.servicer.name }}</p>
-        <p><strong>Status:</strong> {{ booking.status }}</p>
-        <p><strong>Vehicle:</strong> {{ booking.vehicle_make }} {{ booking.vehicle_model }}</p>
-        <p><strong>Work Type:</strong> {{ booking.work_type }}</p>
+    <!-- Breadcrumb -->
+    <nav class="mb-3 text-muted">
+        Home / Work Status / <strong>SRV-{{ booking.id }}</strong>
+    </nav>
 
-        <h6 class="mt-3">Complaints</h6>
-        <ul>
-            {% for c in complaint_list %}
-                <li>{{ c }}</li>
-            {% endfor %}
-        </ul>
+        
+    <div class="d-flex justify-content-between align-items-center mb-4">
 
-        <a href="{% url 'user_work_status' %}" class="btn btn-secondary mt-3">
-            Back
-        </a>
+        <div>
+            <!-- 🔙 Back Button -->
+            <a href="{% url 'user_work_status' %}"
+              class="btn btn-outline-secondary btn-sm mb-2">
+                ← Back to Work Status
+            </a>
+
+            <h3 class="fw-bold mb-1">
+                Service Request #SRV-{{ booking.id }}
+            </h3>
+
+            <span class="badge
+                {% if booking.status == 'Requested' %}bg-warning
+                {% elif booking.status == 'Accepted' %}bg-info
+                {% elif booking.status == 'Ongoing' %}bg-primary
+                {% elif booking.status == 'Completed' %}bg-success
+                {% else %}bg-danger{% endif %}
+            ">
+                {{ booking.status }}
+            </span>
+
+            {% if booking.status == "Pending" and booking.diagnosis %}
+                <div class="mt-2">
+                    <a href="{% url 'diagnosis_detail' booking.id %}"
+                      class="btn btn-outline-primary btn-sm">
+                        View Diagnosis Report
+                    </a>
+                </div>
+            {% endif %}
+        </div>
+
+    </div>
+
+    <div class="row g-4">
+
+        <!-- LEFT COLUMN -->
+        <div class="col-lg-4">
+
+            <!-- Vehicle Card -->
+            <div class="bg-white p-4 rounded shadow-sm mb-4">
+                <h6 class="fw-semibold mb-3">Vehicle Details</h6>
+                <p><strong>{{ booking.vehicle_make }} {{ booking.vehicle_model }}</strong></p>
+                <p>Year: {{ booking.year }}</p>
+                <p>Fuel: {{ booking.fuel_type }}</p>
+                <p>Number: {{ booking.vehicle_number }}</p>
+            </div>
+
+            <!-- Servicer Card -->
+            <div class="bg-white p-4 rounded shadow-sm mb-4">
+                <h6 class="fw-semibold mb-2">Service Center</h6>
+                <p class="fw-bold">{{ booking.servicer.name }}</p>
+                <p class="text-muted">{{ booking.servicer.location }}</p>
+                <p>⭐ {{ booking.servicer.rating }}</p>
+                <p>{{ booking.servicer.available_time }}</p>
+            </div>
+
+        </div>
+
+        <!-- RIGHT COLUMN -->
+        <div class="col-lg-8">
+
+            <!-- Tabs -->
+            <ul class="nav nav-tabs mb-3" id="bookingTabs" role="tablist">
+
+                <!-- Service Log Tab -->
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active"
+                            id="log-tab"
+                            data-bs-toggle="tab"
+                            data-bs-target="#log"
+                            type="button"
+                            role="tab">
+                        Service Log
+                    </button>
+                </li>
+
+                <!-- Diagnostics Tab (ONLY WHEN AVAILABLE) -->
+                {% if booking.status == "Pending" and booking.diagnosis %}
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link"
+                            id="diagnostics-tab"
+                            data-bs-toggle="tab"
+                            data-bs-target="#diagnostics"
+                            type="button"
+                            role="tab">
+                        Diagnostics
+                    </button>
+                </li>
+                {% endif %}
+
+            </ul>
+
+<div class="tab-content">
+
+    <!-- Service Log Content -->
+    <div class="tab-pane fade show active"
+         id="log"
+         role="tabpanel">
+
+        <div class="bg-white p-4 rounded shadow-sm">
+                  {% if progress %}
+                      {% for p in progress %}
+                          <div class="border-start ps-3 mb-3">
+                              <p class="fw-semibold mb-1">{{ p.title }}</p>
+                              <small class="text-muted">
+                                  {{ p.updated_at|date:"M d, Y h:i A" }}
+                              </small>
+                              <p class="mt-1">{{ p.description }}</p>
+                          </div>
+                      {% endfor %}
+                  {% else %}
+                      <p class="text-muted">No progress updates yet.</p>
+                  {% endif %}
+              </div>
+
+          </div>
+
+          <!-- Diagnostics Content (ONLY WHEN AVAILABLE) -->
+          {% if booking.status == "Pending" and booking.diagnosis %}
+          <div class="tab-pane fade"
+              id="diagnostics"
+              role="tabpanel">
+
+              <div class="bg-white p-4 rounded shadow-sm">
+                  <h6 class="fw-semibold mb-2">Diagnosis Report</h6>
+
+                  <p class="mb-2">
+                      <strong>Estimated Cost:</strong>
+                      ₹{{ booking.diagnosis.estimated_cost }}
+                  </p>
+
+                  <p>{{ booking.diagnosis.report }}</p>
+
+                  <!-- Confirm Button -->
+                  <form method="POST" action="{% url 'confirm_diagnosis' booking.id %}">
+                      {% csrf_token %}
+                      <button class="btn btn-success mt-3">
+                          Confirm & Proceed
+                      </button>
+                  </form>
+              </div>
+
+          </div>
+          {% endif %}
+
+      </div>
+
+
+            <!-- Complaints -->
+            <div class="bg-white p-4 rounded shadow-sm mt-4">
+                <h6 class="fw-semibold mb-2">Reported Issues</h6>
+                <ul>
+                    {% for c in complaint_list %}
+                        <li>{{ c }}</li>
+                    {% endfor %}
+                </ul>
+            </div>
+
+        </div>
+
     </div>
 </div>
 
