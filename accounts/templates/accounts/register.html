@@ -24,47 +24,84 @@
             <div class="row">
                 <div class="col-md-6 mb-3">
                     <label class="form-label">First Name</label>
-                    <input type="text" name="first_name" id="first_name" class="form-control" required>
-                    <div class="invalid-feedback small" id="first_name_error"></div>
+                    <input type="text" name="first_name" id="first_name" class="form-control {% if form.first_name.errors %}is-invalid{% endif %}" value="{% if form.first_name.value %}{{ form.first_name.value }}{% endif %}" required>
+                    <div class="invalid-feedback small" id="first_name_error">
+                        {% if form.first_name.errors %}
+                            {% for error in form.first_name.errors %}
+                                {{ error }}
+                            {% endfor %}
+                        {% endif %}
+                    </div>
                 </div>
 
                 <div class="col-md-6 mb-3">
                     <label class="form-label">Last Name</label>
-                    <input type="text" name="last_name" id="last_name" class="form-control" required>
-                    <div class="invalid-feedback small" id="last_name_error"></div>
+                    <input type="text" name="last_name" id="last_name" class="form-control {% if form.last_name.errors %}is-invalid{% endif %}" value="{% if form.last_name.value %}{{ form.last_name.value }}{% endif %}" required>
+                    <div class="invalid-feedback small" id="last_name_error">
+                        {% if form.last_name.errors %}
+                            {% for error in form.last_name.errors %}
+                                {{ error }}
+                            {% endfor %}
+                        {% endif %}
+                    </div>
                 </div>
             </div>
 
             <div class="mb-3">
                 <label class="form-label">Username</label>
-                <input type="text" name="username" id="username" class="form-control" required>
-                <div class="invalid-feedback small" id="username_error"></div>
+                <input type="text" name="username" id="username" class="form-control {% if form.username.errors %}is-invalid{% endif %}" value="{% if form.username.value %}{{ form.username.value }}{% endif %}" required>
+                <div class="invalid-feedback small" id="username_error">
+                    {% if form.username.errors %}
+                        {% for error in form.username.errors %}
+                            {{ error }}
+                        {% endfor %}
+                    {% endif %}
+                </div>
             </div>
 
             <div class="mb-3">
                 <label class="form-label">Email</label>
-                <input type="email" name="email" id="email" class="form-control" required autocomplete="email">
-                <div class="invalid-feedback small" id="email_error"></div>
+                <input type="email" name="email" id="email" class="form-control {% if form.email.errors %}is-invalid{% endif %}" value="{% if form.email.value %}{{ form.email.value }}{% endif %}" required autocomplete="email">
+                <div class="invalid-feedback small" id="email_error">
+                    {% if form.email.errors %}
+                        {% for error in form.email.errors %}
+                            {{ error }}
+                        {% endfor %}
+                    {% endif %}
+                </div>
                 <div class="valid-feedback small" id="email_success" style="display: none;">✓ Valid email format</div>
             </div>
 
             <div class="mb-3">
                 <label class="form-label">Phone Number</label>
-                <input type="text" name="phone" id="phone" maxlength="10" class="form-control" required autocomplete="tel" inputmode="numeric">
-                <div class="invalid-feedback small" id="phone_error"></div>
+                <input type="text" name="phone" id="phone" maxlength="10" class="form-control {% if form.phone.errors %}is-invalid{% endif %}" value="{% if form.phone.value %}{{ form.phone.value }}{% endif %}" required autocomplete="tel" inputmode="numeric">
+                <div class="invalid-feedback small" id="phone_error">
+                    {% if form.phone.errors %}
+                        {% for error in form.phone.errors %}
+                            {{ error }}
+                        {% endfor %}
+                    {% endif %}
+                </div>
                 <div class="valid-feedback small" id="phone_success" style="display: none;">✓ Valid phone number</div>
             </div>
 
             <div class="mb-3 position-relative" style="min-height:80px;">
                 <div class="d-flex justify-content-between align-items-center">
                     <label class="form-label mb-1">Password</label>
+                    <span class="info-icon" id="password-info-btn" title="Show password requirements">i</span>
                 </div>
 
-                <input type="password" name="password1" id="password1" class="form-control" required autocomplete="new-password">
-                <div class="invalid-feedback small" id="password1_error"></div>
+                <input type="password" name="password1" id="password1" class="form-control {% if form.password1.errors %}is-invalid{% endif %}" required autocomplete="new-password">
+                <div class="invalid-feedback small" id="password1_error">
+                    {% if form.password1.errors %}
+                        {% for error in form.password1.errors %}
+                            {{ error }}
+                        {% endfor %}
+                    {% endif %}
+                </div>
 
-                <!-- Side-floating panel (hidden by default) -->
-                <div id="password-rules-box" class="password-rules-box">
+                <!-- Password rules box (hidden by default, shown on info button click) -->
+                <div id="password-rules-box" class="password-rules-box" style="display: none;">
                   <div class="fw-semibold mb-1">Password requirements:</div>
                   <ul class="list-unstyled mb-1">
                       <li id="rule-length"  class="rule-item invalid">✖ Minimum 8 characters</li>
@@ -78,8 +115,19 @@
 
             <div class="mb-3">
                 <label class="form-label">Confirm Password</label>
-                <input type="password" name="password2" id="password2" class="form-control" required autocomplete="new-password">
-                <div class="invalid-feedback small" id="password2_error"></div>
+                <input type="password" name="password2" id="password2" class="form-control {% if form.password2.errors %}is-invalid{% endif %}" required autocomplete="new-password">
+                <div class="invalid-feedback small" id="password2_error">
+                    {% if form.password2.errors %}
+                        {% for error in form.password2.errors %}
+                            {{ error }}
+                        {% endfor %}
+                    {% endif %}
+                    {% if form.non_field_errors %}
+                        {% for error in form.non_field_errors %}
+                            {{ error }}
+                        {% endfor %}
+                    {% endif %}
+                </div>
             </div>
 
             <button type="submit" class="btn btn-primary w-100">Register</button>
@@ -137,6 +185,7 @@ document.addEventListener('DOMContentLoaded', function () {
     // Clear URL parameter
     window.history.replaceState({}, document.title, window.location.pathname);
   }
+
   // Element refs
   const emailInput = document.getElementById('email');
   const phoneInput = document.getElementById('phone');
@@ -260,6 +309,55 @@ document.addEventListener('DOMContentLoaded', function () {
     });
   }
 
+  // First name validation
+  const firstNameInput = document.getElementById('first_name');
+  function validateFirstNameField() {
+    const firstName = firstNameInput.value.trim();
+    if (!firstName) {
+      markInvalid(firstNameInput, 'First name is required.');
+      return false;
+    }
+    markValid(firstNameInput);
+    return true;
+  }
+  if (firstNameInput) {
+    firstNameInput.addEventListener('blur', validateFirstNameField);
+  }
+
+  // Last name validation
+  const lastNameInput = document.getElementById('last_name');
+  function validateLastNameField() {
+    const lastName = lastNameInput.value.trim();
+    if (!lastName) {
+      markInvalid(lastNameInput, 'Last name is required.');
+      return false;
+    }
+    markValid(lastNameInput);
+    return true;
+  }
+  if (lastNameInput) {
+    lastNameInput.addEventListener('blur', validateLastNameField);
+  }
+
+  // Username validation
+  const usernameInput = document.getElementById('username');
+  function validateUsernameField() {
+    const username = usernameInput.value.trim();
+    if (!username) {
+      markInvalid(usernameInput, 'Username is required.');
+      return false;
+    }
+    if (username.length < 3) {
+      markInvalid(usernameInput, 'Username must be at least 3 characters.');
+      return false;
+    }
+    markValid(usernameInput);
+    return true;
+  }
+  if (usernameInput) {
+    usernameInput.addEventListener('blur', validateUsernameField);
+  }
+
   // Email validation events
   if (emailInput) {
     emailInput.addEventListener('input', function() {
@@ -324,29 +422,56 @@ document.addEventListener('DOMContentLoaded', function () {
     markValid(pw2Input); return true;
   }
 
-  // Show/hide rules box (Design B)
-  function showPasswordRules() { if (pwRulesBox) pwRulesBox.style.display = 'block'; }
-  function hidePasswordRules()  {
+  // Show/hide rules box on info button click
+  const passwordInfoBtn = document.getElementById('password-info-btn');
+  let rulesBoxVisible = false;
+  
+  function togglePasswordRules() {
     if (!pwRulesBox) return;
-    setTimeout(() => {
-      if (!pwRulesBox.contains(document.activeElement) && document.activeElement !== pwInput) {
-        pwRulesBox.style.display = 'none';
-      }
-    }, 120);
+    rulesBoxVisible = !rulesBoxVisible;
+    pwRulesBox.style.display = rulesBoxVisible ? 'block' : 'none';
+    if (rulesBoxVisible && pwInput && pwInput.value) {
+      updateRulesUI(pwInput.value || '');
+    }
   }
 
-  // Wire events
+  // Wire info button click
+  if (passwordInfoBtn) {
+    passwordInfoBtn.addEventListener('click', function(e) {
+      e.preventDefault();
+      togglePasswordRules();
+    });
+  }
+
+  // Show password rules if there are password errors from server
+  {% if form.password1.errors %}
+    if (pwRulesBox) {
+      pwRulesBox.style.display = 'block';
+      rulesBoxVisible = true;
+      if (pwInput && pwInput.value) {
+        updateRulesUI(pwInput.value || '');
+      }
+    }
+  {% endif %}
+
+  // Wire password input events
   if (pwInput) {
-    pwInput.addEventListener('focus', () => {
-      showPasswordRules();
-      updateRulesUI(pwInput.value || '');
-    });
     pwInput.addEventListener('input', () => {
-      updateRulesUI(pwInput.value || '');
-      if (pwInput.value.length) validatePasswordField(); else clearValidation(pwInput);
-      if (pw2Input && pw2Input.value.length) validateConfirmPasswordField();
+      if (rulesBoxVisible) {
+        updateRulesUI(pwInput.value || '');
+      }
+      if (pwInput.value.length) {
+        validatePasswordField();
+      } else {
+        clearValidation(pwInput);
+      }
+      if (pw2Input && pw2Input.value.length) {
+        validateConfirmPasswordField();
+      }
     });
-    pwInput.addEventListener('blur', () => { validatePasswordField(); hidePasswordRules(); });
+    pwInput.addEventListener('blur', () => {
+      validatePasswordField();
+    });
   }
 
   if (pw2Input) {
@@ -354,16 +479,14 @@ document.addEventListener('DOMContentLoaded', function () {
     pw2Input.addEventListener('blur', validateConfirmPasswordField);
   }
 
-  if (pwRulesBox) {
-    pwRulesBox.addEventListener('mouseenter', () => { /* keep visible */ });
-    pwRulesBox.addEventListener('mouseleave', () => { if (document.activeElement !== pwInput) hidePasswordRules(); });
-  }
-
   // Final form submit validation (assumes your form id is registerForm)
   const form = document.getElementById('registerForm');
   if (form) {
     form.addEventListener('submit', function (e) {
       let ok = true;
+      ok = validateFirstNameField() && ok;
+      ok = validateLastNameField() && ok;
+      ok = validateUsernameField() && ok;
       ok = validateEmailField() && ok;
       ok = validatePhoneField() && ok;
       ok = validatePasswordField() && ok;

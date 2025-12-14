@@ -43,6 +43,7 @@ INSTALLED_APPS = [
 
 AUTH_USER_MODEL = 'accounts.User'
 
+LOGIN_URL = 'login_page'
 LOGIN_REDIRECT_URL = 'user_home'
 LOGOUT_REDIRECT_URL = 'login_page'
 

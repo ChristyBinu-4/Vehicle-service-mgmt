@@ -5,25 +5,79 @@ from django.contrib import messages
 from django.db.models import Q
 from django.urls import reverse
 from django.http import HttpResponseRedirect
+from functools import wraps
 
 from .forms import UserRegisterForm, FeedbackForm
 from .models import Feedback, WorkProgress, Servicer, Booking
+
+
+def user_role_required(view_func):
+    """
+    Decorator to ensure only users with USER role can access the view.
+    Must be used after @login_required decorator.
+    """
+    @wraps(view_func)
+    def wrapper(request, *args, **kwargs):
+        if not request.user.is_authenticated:
+            return redirect('login_page')
+        
+        if request.user.role != 'USER':
+            # User is logged in but not a USER role
+            logout(request)
+            return HttpResponseRedirect(reverse("login_page") + "?error=invalid_role")
+        
+        return view_func(request, *args, **kwargs)
+    return wrapper
 
 
 
 from django.contrib.auth.decorators import login_required
 
 def login_page(request):
+    """
+    Handle user login functionality.
+    - Only allows USER role to log in
+    - Validates credentials using Django authentication
+    - Checks if account is active
+    - Redirects to user home on success
+    - Shows error messages for invalid credentials or inactive accounts
+    """
+    # If user is already logged in, redirect to home
+    if request.user.is_authenticated:
+        # Check if user has USER role, if not, logout and show error
+        if request.user.role == 'USER':
+            return redirect("user_home")
+        else:
+            # User is logged in but not a USER role, logout them
+            logout(request)
+    
     if request.method == "POST":
-        username = request.POST.get("username")
-        password = request.POST.get("password")
-
+        username = request.POST.get("username", "").strip()
+        password = request.POST.get("password", "").strip()
+        
+        # Validate empty fields
+        if not username:
+            return HttpResponseRedirect(reverse("login_page") + "?error=empty_username")
+        if not password:
+            return HttpResponseRedirect(reverse("login_page") + "?error=empty_password")
+        
+        # Authenticate user
         user = authenticate(request, username=username, password=password)
-
+        
         if user is not None:
+            # Check if account is active
+            if not user.is_active:
+                return HttpResponseRedirect(reverse("login_page") + "?error=inactive")
+            
+            # Check if user has USER role
+            if user.role != 'USER':
+                return HttpResponseRedirect(reverse("login_page") + "?error=invalid_role")
+            
+            # Login successful - create session
             login(request, user)
             return redirect("user_home")
         else:
+            # Invalid credentials
             return HttpResponseRedirect(reverse("login_page") + "?error=invalid")
 
     return render(request, "accounts/login.html")
@@ -68,6 +122,7 @@ def user_register(request):
 
 
 @login_required
+@user_role_required
 def user_home(request):
     user_name = request.user.first_name or request.user.username
     services = ["Oil Change", "Tire Rotation", "Brake Inspection"]
@@ -90,6 +145,7 @@ def user_home(request):
     })
 
 @login_required
+@user_role_required
 def user_search(request):
     query = request.GET.get("q", "")
     work_type = request.GET.get("type", "")
@@ -123,6 +179,7 @@ def user_search(request):
     })
 
 @login_required
+@user_role_required
 def user_work_status(request):
     bookings = Booking.objects.filter(user=request.user).order_by("-created_at")
 
@@ -138,6 +195,7 @@ def user_work_status(request):
     })
     
 @login_required
+@user_role_required
 def booking_detail(request, booking_id):
     booking = Booking.objects.get(id=booking_id, user=request.user)
 
@@ -155,14 +213,19 @@ def booking_detail(request, booking_id):
 
 
 
+@login_required
+@user_role_required
 def user_payment(request):
     return render(request, "user_payment.html")
 
+@login_required
+@user_role_required
 def user_profile(request):
     return render(request, "user_profile.html")
 
 
 @login_required
+@user_role_required
 def book_service(request, servicer_id):
     servicer = Servicer.objects.get(id=servicer_id)
     work_types = [w.strip() for w in servicer.work_type.split(",")]
@@ -193,6 +256,7 @@ def book_service(request, servicer_id):
         "data": session_data,
     })
 @login_required
+@user_role_required
 def booking_confirm(request):
     data = request.session.get("booking_data")
     if not data:
@@ -230,6 +294,7 @@ def booking_confirm(request):
 
 
 @login_required
+@user_role_required
 def diagnosis_detail(request, booking_id):
     booking = get_object_or_404(Booking, id=booking_id, user=request.user)
 

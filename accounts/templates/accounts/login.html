@@ -97,7 +97,7 @@
   </div>
 </div>
 
-<!-- Error Modal for Invalid Credentials -->
+<!-- Error Modal for Login Errors -->
 <div class="modal fade" id="loginErrorModal" tabindex="-1" aria-labelledby="loginErrorModalLabel" aria-hidden="true">
   <div class="modal-dialog modal-dialog-centered">
     <div class="modal-content">
@@ -113,7 +113,7 @@
             <path d="M8.982 1.566a1.13 1.13 0 0 0-1.96 0L.165 13.233c-.457.778.091 1.767.98 1.767h13.713c.889 0 1.438-.99.98-1.767L8.982 1.566zM8 5c.535 0 .954.462.9.995l-.35 3.507a.552.552 0 0 1-1.1 0L7.1 5.995A.905.905 0 0 1 8 5zm.002 6a1 1 0 1 1 0 2 1 1 0 0 1 0-2z"/>
           </svg>
         </div>
-        <p class="mb-0">Invalid username or password.<br>Please check your credentials and try again.</p>
+        <p class="mb-0" id="loginErrorMessage">Invalid username or password.<br>Please check your credentials and try again.</p>
       </div>
       <div class="modal-footer border-0 justify-content-center">
         <button type="button" class="btn btn-danger" data-bs-dismiss="modal">Try Again</button>
@@ -136,9 +136,35 @@ document.addEventListener('DOMContentLoaded', function() {
     window.history.replaceState({}, document.title, window.location.pathname);
   }
   
-  // Check for login error
-  if (urlParams.get('error') === 'invalid') {
+  // Check for login errors and show appropriate message
+  const errorType = urlParams.get('error');
+  if (errorType) {
     const modal = new bootstrap.Modal(document.getElementById('loginErrorModal'));
+    const errorMessageEl = document.getElementById('loginErrorMessage');
+    
+    let errorMessage = 'An error occurred. Please try again.';
+    
+    switch(errorType) {
+      case 'invalid':
+        errorMessage = 'Invalid username or password.<br>Please check your credentials and try again.';
+        break;
+      case 'empty_username':
+        errorMessage = 'Username is required.<br>Please enter your username.';
+        break;
+      case 'empty_password':
+        errorMessage = 'Password is required.<br>Please enter your password.';
+        break;
+      case 'inactive':
+        errorMessage = 'Your account has been deactivated.<br>Please contact support for assistance.';
+        break;
+      case 'invalid_role':
+        errorMessage = 'Access denied.<br>This login page is for regular users only.';
+        break;
+      default:
+        errorMessage = 'An error occurred during login.<br>Please try again.';
+    }
+    
+    errorMessageEl.innerHTML = errorMessage;
     modal.show();
     // Clear URL parameter
     window.history.replaceState({}, document.title, window.location.pathname);
