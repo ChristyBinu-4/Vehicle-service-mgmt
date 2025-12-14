@@ -3,6 +3,8 @@ from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.db.models import Q
+from django.urls import reverse
+from django.http import HttpResponseRedirect
 
 from .forms import UserRegisterForm, FeedbackForm
 from .models import Feedback, WorkProgress, Servicer, Booking
@@ -20,25 +22,46 @@ def login_page(request):
 
         if user is not None:
             login(request, user)
-            messages.success(request, "Login Successful!")
             return redirect("user_home")
         else:
-            messages.error(request, "Invalid username or password")
-            return redirect("login_page")
+            return HttpResponseRedirect(reverse("login_page") + "?error=invalid")
 
     return render(request, "accounts/login.html")
 
 
 def user_register(request):
+    """
+    Handle user registration with comprehensive validation.
+    - Validates all fields according to requirements
+    - Shows specific error messages for each validation failure
+    - Only saves user if all validations pass
+    - Password is automatically hashed by Django
+    - Redirects to login page on success
+    """
     if request.method == "POST":
         form = UserRegisterForm(request.POST)
         if form.is_valid():
-            form.save()
-            messages.success(request, "Account created successfully! Please login.")
-            return redirect("login_page")
+            try:
+                # Save user (password is automatically hashed by UserCreationForm)
+                user = form.save()
+                
+                # Verify user was created successfully
+                if user and user.pk:
+                    # Redirect to login page with success parameter
+                    return HttpResponseRedirect(reverse("login_page") + "?registered=success")
+                else:
+                    return HttpResponseRedirect(reverse("user_register") + "?error=failed")
+            except Exception as e:
+                # Log the error for debugging
+                import logging
+                logger = logging.getLogger(__name__)
+                logger.error(f"Registration error: {str(e)}")
+                return HttpResponseRedirect(reverse("user_register") + "?error=exception")
         else:
-            messages.error(request, "Registration failed. Please check details.")
+            # Form has validation errors - render with form errors
+            pass
     else:
+        # GET request - show empty form
         form = UserRegisterForm()
 
     return render(request, "accounts/register.html", {"form": form})
@@ -49,8 +72,8 @@ def user_home(request):
     user_name = request.user.first_name or request.user.username
     services = ["Oil Change", "Tire Rotation", "Brake Inspection"]
 
-    # Fetch latest work progress for logged-in user
-    work_list = WorkProgress.objects.filter(user=request.user).order_by("-updated_at")[:6]
+    # Fetch latest work progress for logged-in user through booking relationship
+    work_list = WorkProgress.objects.filter(booking__user=request.user).order_by("-updated_at")[:6]
 
     # Feedback via modal popup
     if request.method == "POST":
@@ -225,5 +248,18 @@ def diagnosis_detail(request, booking_id):
 
 
 def user_logout(request):
-    logout(request)
-    return redirect('login')
+    """
+    Handle user logout functionality.
+    - Logs out the current user
+    - Clears session data
+    - Redirects to login page
+    """
+    if request.user.is_authenticated:
+        # Logout the user (clears authentication)
+        logout(request)
+        
+        # Clear session data
+        request.session.flush()
+    
+    # Redirect to login page
+    return redirect('login_page')

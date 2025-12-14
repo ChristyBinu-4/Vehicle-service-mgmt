@@ -2,12 +2,102 @@ from django import forms
 from django.contrib.auth.forms import UserCreationForm
 from .models import User, Feedback
 
-class UserRegisterForm(UserCreationForm):
 
-    first_name = forms.CharField(max_length=50)
-    last_name = forms.CharField(max_length=50)
-    email = forms.EmailField()
-    phone = forms.CharField(max_length=10)
+class UserRegisterForm(UserCreationForm):
+    """
+    User registration form with comprehensive validation:
+    - First name, last name, username, email, phone, password, confirm password
+    - Email format validation
+    - Phone number validation (exactly 10 digits)
+    - Password rules: min 8 chars, uppercase, lowercase, number
+    - Password confirmation matching
+    - Username and email uniqueness
+    """
+    
+    first_name = forms.CharField(
+        max_length=150,
+        required=True,
+        widget=forms.TextInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'Enter your first name'
+        }),
+        error_messages={
+            'required': 'First name is required.'
+        }
+    )
+    
+    last_name = forms.CharField(
+        max_length=150,
+        required=True,
+        widget=forms.TextInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'Enter your last name'
+        }),
+        error_messages={
+            'required': 'Last name is required.'
+        }
+    )
+    
+    username = forms.CharField(
+        max_length=150,
+        required=True,
+        widget=forms.TextInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'Choose a username'
+        }),
+        error_messages={
+            'required': 'Username is required.',
+            'unique': 'A user with that username already exists.'
+        }
+    )
+    
+    email = forms.EmailField(
+        required=True,
+        widget=forms.EmailInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'Enter your email address'
+        }),
+        error_messages={
+            'required': 'Email is required.',
+            'invalid': 'Enter a valid email address.'
+        }
+    )
+    
+    phone = forms.CharField(
+        max_length=10,
+        required=True,
+        widget=forms.TextInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'Enter 10-digit phone number'
+        }),
+        error_messages={
+            'required': 'Phone number is required.'
+        }
+    )
+    
+    password1 = forms.CharField(
+        label='Password',
+        widget=forms.PasswordInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'Enter password',
+            'autocomplete': 'new-password'
+        }),
+        error_messages={
+            'required': 'Password is required.'
+        }
+    )
+    
+    password2 = forms.CharField(
+        label='Confirm Password',
+        widget=forms.PasswordInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'Confirm your password',
+            'autocomplete': 'new-password'
+        }),
+        error_messages={
+            'required': 'Please confirm your password.'
+        }
+    )
 
     class Meta:
         model = User
@@ -17,48 +107,107 @@ class UserRegisterForm(UserCreationForm):
             'password1', 'password2',
         ]
 
-    # PHONE VALIDATION
+    def clean_username(self):
+        """Validate username uniqueness."""
+        username = self.cleaned_data.get('username')
+        if User.objects.filter(username=username).exists():
+            raise forms.ValidationError("A user with that username already exists. Please choose a different username.")
+        return username
+
+    def clean_email(self):
+        """Validate email format and uniqueness."""
+        email = self.cleaned_data.get('email')
+        
+        # Email format is automatically validated by EmailField
+        # Check email uniqueness
+        if User.objects.filter(email=email).exists():
+            raise forms.ValidationError("A user with that email already exists. Please use a different email address.")
+        
+        return email
+
     def clean_phone(self):
+        """Validate phone number is exactly 10 digits."""
         phone = self.cleaned_data.get('phone')
+        
+        if not phone:
+            raise forms.ValidationError("Phone number is required.")
+        
+        # Check if phone contains only digits
         if not phone.isdigit():
             raise forms.ValidationError("Phone number must contain only digits.")
+        
+        # Check if phone is exactly 10 digits
         if len(phone) != 10:
             raise forms.ValidationError("Phone number must be exactly 10 digits.")
+        
         return phone
 
-    # EMAIL UNIQUE VALIDATION
-    def clean_email(self):
-        email = self.cleaned_data.get('email')
-        if User.objects.filter(email=email).exists():
-            raise forms.ValidationError("Email already exists.")
-        return email
-      
     def clean_password1(self):
-      cleaned_data = super().clean()
-      password1 = cleaned_data.get("password1")
-      password2 = cleaned_data.get("password2")
+        """Validate password meets all requirements."""
+        password1 = self.cleaned_data.get('password1')
+        
+        if not password1:
+            raise forms.ValidationError("Password is required.")
+        
+        # Minimum 8 characters
+        if len(password1) < 8:
+            raise forms.ValidationError("Password must be at least 8 characters long.")
+        
+        # At least one uppercase letter
+        if not any(c.isupper() for c in password1):
+            raise forms.ValidationError("Password must contain at least one uppercase letter.")
+        
+        # At least one lowercase letter
+        if not any(c.islower() for c in password1):
+            raise forms.ValidationError("Password must contain at least one lowercase letter.")
+        
+        # At least one number
+        if not any(c.isdigit() for c in password1):
+            raise forms.ValidationError("Password must contain at least one number.")
+        
+        return password1
 
+    def clean(self):
+        """Validate password confirmation matches."""
+        cleaned_data = super().clean()
+        password1 = cleaned_data.get('password1')
+        password2 = cleaned_data.get('password2')
+        
+        if password1 and password2:
+            if password1 != password2:
+                raise forms.ValidationError({
+                    'password2': "Passwords do not match. Please enter the same password in both fields."
+                })
+        
+        return cleaned_data
 
-      # Minimum 8 chars
-      if len(password1) < 8:
-          raise forms.ValidationError("Password must be at least 8 characters long.")
-
-      # At least one uppercase
-      if not any(c.isupper() for c in password1):
-          raise forms.ValidationError("Password must contain at least one uppercase letter.")
-
-      # At least one lowercase
-      if not any(c.islower() for c in password1):
-          raise forms.ValidationError("Password must contain at least one lowercase letter.")
-
-      # At least one number
-      if not any(c.isdigit() for c in password1):
-          raise forms.ValidationError("Password must contain at least one number.")
-  
-      if password1 and password2 and password1 != password2:
-        raise forms.ValidationError("Passwords do not match.")
-      
-      return password1
+    def save(self, commit=True):
+        """
+        Save user with USER role and hashed password.
+        UserCreationForm's save() method handles password hashing automatically.
+        """
+        # Call parent save with commit=False to get user object
+        # This will create the user instance and set the hashed password
+        user = super().save(commit=False)
+        
+        # Set role to USER for user registration
+        user.role = 'USER'
+        
+        # Ensure user is active (required for login)
+        user.is_active = True
+        
+        # Ensure email is set (required field)
+        if not user.email:
+            user.email = self.cleaned_data.get('email', '')
+        
+        # Save the user if commit=True
+        # Password is already hashed by UserCreationForm's save method
+        if commit:
+            user.save()
+            # Save many-to-many relationships if any (UserCreationForm handles this)
+            self.save_m2m()
+        
+        return user
 
 
 class FeedbackForm(forms.ModelForm):

@@ -1,0 +1,478 @@
+Story of Vehicle management system
+
+Basic Idea of the project is to connect the people with service centers or work shop with ease of user actions These are specifed roles in the given project 
+1. User 
+2. Servicer 
+3. Admin
+
+User needs to search any service centres around the user regarding a work. So user can add his location and type of work and search any services around user. User can choose any one of the worker and send request to the worker. This request will reach the servicer and servicer can check whether he could complete the work as per requested time. When servicer accepts the request the Automatically user gets a notification to get his vehicle to the work shop either by himself or by servicer. When vehicle reaches the service center user gets status of his work is pending. Servicer can send diagnostics on vehicle and work needed to be done with estimated amount. User will review it and Decide whether to do the work or not. When user accepts the diagnostic work will move to ongoing and user can update the status of work when each work finishes. When work is completed. Servicer can mark work as completed and then status changes to Completed and Servicer can request payment. Then user gets the notification for payment and a payment interface will be popped up. User can compelete the payment and Work details will be moved work history.
+
+User: 
+
+Initially user takes the webpage accessing 127.0.0.1:8000 a login page should appear with username and password text box and a login button and in the end there must be sign up button for redirecting registration
+
+If user has created an account(registered) he can login by typing username and password while checking on: 
+
+if username and password matches with database entry then redirect to user page with login successfull pop up 
+else show an error pop up
+
+Registration page should contain the following details: 
+
+First name, Last Name, User name, email, phone number, password and confirm password 
+
+These informations are collected from user for registration. Before registration some conditions need to be checked: 
+
+1. Email should be valid 
+2. Phone number must be exact 10 digit 
+3. Conditions of password: 
+			Minimum 8 characters
+			At least one uppercase letter
+			At least one lowercase letter
+			At least one number
+			
+			password UI design: Larger box below the password input, but only visible on focus
+			
+After successfull registration a registration successfull pop up should be shown and page should be redirected to login and servicer should login to enter into Home page			
+
+user page: User page contains a sidebar which contains section: 
+1.Home 
+2.Search service
+3.Work status 
+4.payment
+5.work history
+6.profile and log out button 
+
+Initially page lands on home which contains: 
+
+	Header section: Search functionality (When type something and click search leads to search services with typed
+	content searched can be focused on search services) 
+
+	Main content section: 
+	1. Title 
+	2. Work Progress ( if any available) 
+	3. Available services which shows a list available work items that can be clicked and will eventually lead to
+	search services tab with type of work is set the selected work( detailed in Search services functionality now
+	just create a clickable list of available works)
+	4. Contact details section is for viewing some social media links and a button for giving feedback when
+	clicking it a pop up would appear in the centre to give feed back with text area and star rating 
+
+
+	Header section:
+
+	header section will contain three parts:
+
+	1. App name
+	2. search functinality when clicks search redirect to search services with searched page 
+	3. Notification icon for any notification regarding progressive services payment
+
+	Header section:
+
+	Header section contains three items 
+	1. Title 
+	2. Search functionality when search it will redirect to search services 
+	3. Notification icon for any notification regarding work progress, payment and reply feedback etc..
+
+Search service:
+
+	Shows search interface and we can type to search and set the type of work we need and also set location near
+	us
+	search section:
+	1. Textbox for typing search content
+	2. dropdown for setting type
+	3. Another dropdown for setting location 
+	4. Search button 
+
+	When clicks the search button it will show a list work shop that is filtered according to the search
+	conditions.
+	Each list contains basic details of the servicer with two buttons that are:
+	1. More details
+	2. Book service
+
+	More details show the details of the servicer on a pop up when clicking book service it will redirect to book
+	service interface.
+
+	More details:
+	More details will contain the servicer details in this order:
+	Service center name,
+	Location,
+	Rating,
+	Contact details,
+	Type of works they do,
+	Time available etc..
+
+	Book service interface:
+
+	Book service interface is used to request service it will have details and button to request service in this
+	format:
+
+	On left side
+	User name 
+	Car information filling form:
+		Car make,
+		Car Model,
+		Owner name,
+		Fuel type,
+		Year, 
+		vehicle number,
+		Photo of the car
+
+	Type of work selection dropdown:
+		It will show the list of works the servicer can do and user can select one from the text box
+		
+	Date frame in which vehicle work need to completed
+
+	On Right side
+
+	Information regarding service centre:
+		Name of service center
+		Location of service center
+		Available work
+		Available time
+		
+	side Bottom :
+
+	textbox with add button should be there inorder to add each complaints from user regarding vehicle when click
+	add button each complaints need to added as list above 
+
+	on the Bottom corner side:
+
+	There should be a proceed button when clicks proceed it will redirect to the confirmation page 
+	Also need a cancel button to cancel the form.
+
+
+	Confirmation page:
+
+	It contains the details that has been entered in the book service interface
+
+	It will be same ui design as book service with non editable interface that contains:
+
+	1. Username
+	2. Car Information
+	3. Information of the workshop
+	4. Type of work selected 
+	5. complaints added by user
+	6. Send request and edit button
+
+	When send request is clicked the request will be send to servicer and a pop up will show request has been
+	send.
+
+	When servicer accepts or reject request a pop up or notification should be added with message
+	if servicer accepts the request notification must have two button either to give vehicle by himself or service
+	center can send people to collect vehicle
+
+	when servicer gets the vehicle servicer examines and send diagnostic report to the user
+
+	User gets the notification and it will contain a link to the diagnostic report 
+	When user clicks it he can view diagnostic report:
+
+	Diagnostic report: 
+
+	Diagnostic report should contain:
+	On left side:
+
+	1. Vehicle information :
+		Make and model of car
+		Vehicle number 
+		Year
+		Fuel Type 
+	2. Type of work assigned
+	3. Customer complaint: 
+		List of complaints added by user with check box to select which all work should be done
+		
+	on the right side it should display the diagnostic findings by servicer based on the complaints
+
+	This page also contains two button that are start work and decline:
+	Start work will send a notification to servicer to start the work
+	and decline will cancel the work
+
+Work status:
+	
+	Ongoing services should be displayed here  as a list if multiple services are attained each list will contain 
+	following details:
+		1. Photo of car if uploaded
+		2. Service center name
+		3. Car make and model
+		4. service progress or status
+		5. View Details button: When clicking on it will redirect to view details page
+		
+	View details page:
+		This page will contain following things:
+		1. Name of the service
+		2. car information: 
+			make and model
+			vehicle number 
+		3. Assigned to which worker
+		4. Estimated cost & completion
+		5. Multiple tab section with following tabs:
+			1. Service status : shows the timeline of work status
+			2. Diagnostics: This shows the diagnostics in small window
+			3. Communicaton: Chat with servicer(Optional)
+			 
+Service History:
+	This Window should contain list of completed work with following contents on list:
+		1. Service request id 
+		2. Service request title
+		3. Servicer name
+		4. Completed date
+		5. Status(Completed or Cancelled)
+		6. View Details link: When clicking this will show view details pop up page
+		
+	View Details pop up page will contains:	
+		1. Name of the service
+		2. car information: 
+			make and model
+			vehicle number 
+		3. Type of work 
+		4. Complaint list
+		5. Diagnostics (if available)
+		6. Service status 
+
+Payment: 
+	Payment should contain the details of payment done by the user to the various servicer
+	
+Profile:
+	It should contain following section:
+		1. Username and basic information with photo
+		2. Personal Information:
+			1. Firstname
+			2. Lastname
+			3. Email
+			4. Phone Number
+			5. Address 
+			6. edit button to edit these details
+		3. Option for Changing password
+Logout button: 
+	To logout.
+	
+	
+Servicer:
+
+Servicer should have seperate portal for login and register
+
+Initially when servicer enter the portal servicer should login to view home.So when enters the url servicer should see a login page
+
+login page should contain following field:
+	1. Username 			Minimum 8 characters
+			At least one uppercase letter
+			At least one lowercase letter
+			At least one number
+	2. Password 
+	3. Don't have account? register here.. when clicks this move to Register page
+	
+Register page should contain:
+	1 Service center name 
+	2 Owner name
+	3 User name
+	4 Email with validation
+	5 Phone number with exact 10 digit
+	6.Password and Confirm password 
+		Password should be matched with confirm password and it should also follow these condition:
+			Minimum 8 characters
+			At least one uppercase letter
+			At least one lowercase letter
+			At least one number
+			
+After successfull registration it should show a registration successfull pop up should be shown and page should be redirected to login and servicer should login to enter into Home page
+
+After successfull login servicer would redirected to servicer home with servicer sidebar and shows home initially
+
+Sidebar contains these fields:
+	1. Home
+	2. Worklist 
+	3. Payments
+	4. Work history
+	5. Profile 
+	6. Logout
+	
+Servicer Home UI:
+	I should also contain two section that are header and main content
+	
+	Header:
+		Header section contains these items:
+			1. Title
+			2. Notification bar for getting updates from user
+	Main Content:
+		Main content contains these items:
+			1. Latest work
+			2. Earnings until current moment
+			3. Count of works
+			4. Recent feedbacks
+			
+		Latest Work:
+			Latest work should show two or three progressing works and its current status
+			Functionality: When clicks on latest work it should redirect to work status of that clicked work
+		Earnings:
+			This window shows the earning for three timeline 
+				1. Daily Earnings
+				2. Monthly Earnings
+				3. Yearly Earnings
+			When clicking on earning it should redirect to payment page
+		Count of works:
+			This shows the number of works completed 
+		Work history:
+			It should show some completed work details in small window and its feedbacks 
+			When clicking on service history it should redirect to service history and show selected history details
+		
+Work List: 
+	When user clicks on work list tab on the side bar this window should open. Work list is list of works in different
+	states such as:
+		1. Service Requested
+		2. Pending Services 
+		3. Ongoing services 
+		4. Completed services
+		
+	Each window is a small list item just to show some works when clicking on item it would display the details regarding that
+	service and there will be view all link in the corner of each list item. When clicking on the view all it will give bigger
+	list with full window size.
+	
+	In a single window in which servicer redirect into different works with different states and redirect to different page
+	
+	Service Requested:
+		This one of the window in work list in which shows list of service requested by different users and servicer
+		can click on one of the services. While clicking on the list item service details window would pop up.
+		Service window pop up will contain several section such as:
+			1. Information on user and vehicle
+			2. List of work requested
+			3. Buttons for accepting or declining 
+			
+		Information on user and vehicle:
+			This is a section service details page. This page contains:
+				1. Username and details
+				2. Vehicle details such as Make, model, Year, fuel type, vehicle number
+		List of work requested:
+			This section contains: 
+				1. Type of work assigned which is viewed in single sentence
+				2. Complaints added by user viewed as list 
+		Accept and Decline:
+			1. When servicer clicks accept it will show a pop up to confirm the request for vehicle with a small
+			confirmation box. when servicer confirms this pop up and service details window will be closed and status 
+			of the work will be changed to pending
+			
+			2. If servicer decline the request a pop up will show to write reason for declining the request 
+			if servicer write reason and accepts then user will get a notification 
+			
+	Pending services:
+		This is another window that shows the list of work items that are being accepted by the servicer and moved on to
+		pending.
+		
+		1. when click one item on the list it would show pending pop up 
+		Pending pop up:
+			This will also contain same section like:
+				1. Information on user and vehicle
+				2. List of work items 
+			But there will be change in buttons:
+				1. Decline the work 
+				2. Send Diagnosis
+				
+			When clicking decline as usual a confirmation pop up with reason box will appear and declines the work
+			When clicking Send diagnosis the diagnosis popup is opened to fill up diagnosis regarding vehicle.
+			
+			Diagnosis pop up:
+				Diagnosis pop up is a pop up window for recording diagnosis after examining vehicle. This window
+				Should contain these section:
+				On left:
+					1. Vehicle information
+						a. Make and model
+						b. vehicle number 
+						c. Year 
+					2. Customer Complaints as list
+				On right: 
+					1. Textarea for entering diagnosis regarding vehicle 
+					2. List area and text box for adding work items from servicer side
+					
+				On bottom: 
+					Button for sending the diagnosis
+			
+			After diagnosis is sent and when user confirm the work status of the work will be changed to ongoing and
+			it can be viewed in list of ongoing services.
+			
+			
+	Ongoing services:				
+		This is a window that shows the list of work items that are being send diagnosis and that diagnosis and work	
+		items accepted by the user and its status changed to ongoing
+		
+		1. when click one item on the list it would show pending pop up 
+		Pending pop up:
+			This will also contain same section like pending and service request:
+				1. Information on user and vehicle
+			But here the on the part of list of work items each list will have checkbox added to it:
+			This list of work item will contains the work item added by user and servicer with a checkbox
+			
+			servicer can tick this checkbox and there is udpate button to update completed works list
+			After each update when servicer ticks all the works then update button will be disappeared
+			
+			There will be a mark as completed button:
+				This button is used for complete the service without any conditions 
+				like if one service is completed then mark as complete button would appear to stop the work as 
+				needed for servicer
+				if all works are not completed and mark as done is clicked servicer will be asked to write the
+				reason for marking it as completed with confirmation pop up with reason box
+				
+	Completed service:
+		This is a window that shows the list of work items that are completed and its status changed to completed
+		
+		When user clicks one of the items it will also show the pop up window with some sections as same as pending, 	
+		service request and ongoing service such as:
+			1. Information on user and vehicle
+			
+		But some slight changes like:
+			2. Non editable work items list and their status
+			3. Text box near each work items to add payment
+			4. on top right corner Total payment added from added payment details
+			5. On bottom right corner Request for payment button: when clicks the button pop up will close and status 
+			changes to requested for payment in completed section itself
+			
+			After user pays the payment status would be changed to payed
+			
+Payment:
+	Payment tab is used to track all the payment details therefore it will contain list of completed payment and requested 
+	payment. And also this should display :
+		1. Daily Earnings 
+		2. Monthly Earnings
+		3. Yearly Earnings
+		
+Work history:
+	On work history tab it would show the completed works as list and when we click one item in this list it show details of 
+	the particular work like details in completed pop.
+	
+Profile UI: 
+	This should contain three section of details:
+		1 Servicer name and photo 
+		2 Company information
+		3. Address 
+		4. Section for changing password
+		
+		These sections can be edited and updated
+Logout: 
+	To logout
+	
+Admin:
+
+Admin should also have a separate url for login and do not need option for registration 
+After login admin would be redirected to main page with side bar which contains:
+	1. Home 
+	2. List of customers
+	3. List of servicers
+	4. Settings
+
+Home:
+	It should contain these parts:
+		1. Analytics of the app
+		2. Latest status
+		3. Feedback view
+		
+	Analytics: 
+		Show the details of how the app is running 
+	Latest updates:
+		Latest status of ongoing services
+		
+	Feedback view:
+		Feedback from users and servicers
+		
+List of Customers:
+	This will show the list of users
+List of servicers:
+	This will show list of current servicers
+Setting: 
+	Used to change landing page image 
+	Add other admin users 			

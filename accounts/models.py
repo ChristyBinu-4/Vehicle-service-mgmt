@@ -1,19 +1,43 @@
 from django.contrib.auth.models import AbstractUser
 from django.db import models
+from django.core.validators import RegexValidator
 from django.conf import settings
 
 
 class User(AbstractUser):
+    """
+    Custom User model extending AbstractUser.
+    Stores user role (USER, SERVICER, ADMIN), phone number (10 digits),
+    and ensures email and username uniqueness.
+    """
     ROLE_CHOICES = (
-        ('user', 'User'),
-        ('servicer', 'Servicer'),
-        ('admin', 'Admin'),
+        ('USER', 'User'),
+        ('SERVICER', 'Servicer'),
+        ('ADMIN', 'Admin'),
     )
     
-    email = models.EmailField(unique=True)
-    phone = models.CharField(max_length=10)
+    # Email field with uniqueness constraint
+    email = models.EmailField(unique=True, verbose_name='email address')
     
-    role = models.CharField(max_length=20, choices=ROLE_CHOICES, default='user')
+    # Phone number field with validation for exactly 10 digits
+    phone_validator = RegexValidator(
+        regex=r'^\d{10}$',
+        message='Phone number must be exactly 10 digits.'
+    )
+    phone = models.CharField(
+        max_length=10,
+        validators=[phone_validator],
+        verbose_name='phone number',
+        help_text='Phone number must be exactly 10 digits'
+    )
+    
+    # Role field with choices: USER, SERVICER, ADMIN
+    role = models.CharField(
+        max_length=20,
+        choices=ROLE_CHOICES,
+        default='USER',
+        verbose_name='user role'
+    )
 
     def __str__(self):
         return self.username
@@ -33,15 +57,6 @@ class WorkProgress(models.Model):
         ("Completed", "Completed"),
     )
     
-    booking = models.ForeignKey(
-        "Booking",
-        on_delete=models.CASCADE,
-        related_name="progress",
-        null=True,
-        blank=True
-    )
-
-
     booking = models.ForeignKey(
         "Booking",
         on_delete=models.CASCADE,
