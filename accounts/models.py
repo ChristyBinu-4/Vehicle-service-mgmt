@@ -98,12 +98,51 @@ class User(AbstractUser):
         return self.username
 
 class Feedback(models.Model):
-    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
-    message = models.TextField()
+    """
+    Feedback model for user reviews.
+    Linked to user, booking, and servicer.
+    Rating affects servicer profile (aggregated).
+    """
+    RATING_CHOICES = [
+        (1, '1 Star'),
+        (2, '2 Stars'),
+        (3, '3 Stars'),
+        (4, '4 Stars'),
+        (5, '5 Stars'),
+    ]
+    
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='feedbacks')
+    booking = models.OneToOneField(
+        'Booking',
+        on_delete=models.CASCADE,
+        related_name='feedback',
+        blank=True,
+        null=True,
+        help_text="One feedback per booking"
+    )
+    servicer = models.ForeignKey(
+        'Servicer',
+        on_delete=models.CASCADE,
+        related_name='feedbacks',
+        blank=True,
+        null=True,
+        help_text="Servicer who completed the service"
+    )
+    rating = models.IntegerField(
+        choices=RATING_CHOICES,
+        blank=True,
+        null=True,
+        help_text="Rating from 1 to 5 stars"
+    )
+    message = models.TextField(help_text="Feedback message")
     created_at = models.DateTimeField(auto_now_add=True)
 
+    class Meta:
+        ordering = ['-created_at']
+        verbose_name_plural = 'Feedback'
+
     def __str__(self):
-        return f"{self.user.username} - Feedback"
+        return f"{self.user.username} - {self.rating} stars - Booking #{self.booking.id}"
 
 class WorkProgress(models.Model):
     STATUS_CHOICES = (

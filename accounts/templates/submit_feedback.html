@@ -1,0 +1,156 @@
+{% extends "user_sidebar.html" %}
+{% block content %}
+
+<div class="container-fluid p-4">
+    <!-- Success/Error Messages -->
+    {% if messages %}
+        {% for message in messages %}
+        <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+        {% endfor %}
+    {% endif %}
+
+    <div class="row justify-content-center">
+        <div class="col-md-8 col-lg-6">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0 fw-semibold">
+                        <i class="bi bi-star me-2"></i>Submit Feedback
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-4">
+                        <h6 class="fw-semibold mb-3">Service Details</h6>
+                        <table class="table table-borderless table-sm">
+                            <tr>
+                                <td class="text-muted">Service ID:</td>
+                                <td class="fw-semibold">SRV-{{ booking.id }}</td>
+                            </tr>
+                            <tr>
+                                <td class="text-muted">Service Center:</td>
+                                <td class="fw-semibold">{{ booking.servicer.name }}</td>
+                            </tr>
+                            <tr>
+                                <td class="text-muted">Work Type:</td>
+                                <td>{{ booking.work_type }}</td>
+                            </tr>
+                            <tr>
+                                <td class="text-muted">Vehicle:</td>
+                                <td>{{ booking.vehicle_make }} {{ booking.vehicle_model }}</td>
+                            </tr>
+                        </table>
+                    </div>
+
+                    <form method="POST" id="feedbackForm">
+                        {% csrf_token %}
+                        
+                        <!-- Star Rating -->
+                        <div class="mb-4">
+                            <label class="form-label fw-semibold">Rating <span class="text-danger">*</span></label>
+                            <div class="star-rating d-flex gap-2 mb-2" id="starRating">
+                                <i class="bi bi-star fs-3 text-warning" data-rating="1" style="cursor: pointer;"></i>
+                                <i class="bi bi-star fs-3 text-warning" data-rating="2" style="cursor: pointer;"></i>
+                                <i class="bi bi-star fs-3 text-warning" data-rating="3" style="cursor: pointer;"></i>
+                                <i class="bi bi-star fs-3 text-warning" data-rating="4" style="cursor: pointer;"></i>
+                                <i class="bi bi-star fs-3 text-warning" data-rating="5" style="cursor: pointer;"></i>
+                            </div>
+                            <small class="text-muted">Click on the stars to rate (1-5 stars)</small>
+                            {{ form.rating }}
+                            {% if form.rating.errors %}
+                                <div class="text-danger mt-1">{{ form.rating.errors }}</div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Feedback Message -->
+                        <div class="mb-4">
+                            <label for="id_message" class="form-label fw-semibold">Feedback Message <span class="text-danger">*</span></label>
+                            {{ form.message }}
+                            {% if form.message.help_text %}
+                            <small class="form-text text-muted">{{ form.message.help_text }}</small>
+                            {% endif %}
+                            {% if form.message.errors %}
+                                <div class="text-danger mt-1">{{ form.message.errors }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="alert alert-info">
+                            <i class="bi bi-info-circle me-2"></i>
+                            <strong>Note:</strong> Your feedback will be visible to the service center and cannot be edited after submission.
+                        </div>
+
+                        <div class="d-flex gap-2">
+                            <button type="submit" class="btn btn-primary flex-fill">
+                                <i class="bi bi-check-circle me-1"></i>Submit Feedback
+                            </button>
+                            <a href="{% url 'user_work_history' %}" class="btn btn-secondary flex-fill">
+                                Cancel
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const stars = document.querySelectorAll('#starRating i');
+    const ratingInput = document.getElementById('id_rating');
+    let selectedRating = 0;
+
+    // Star click handler
+    stars.forEach((star, index) => {
+        star.addEventListener('click', function() {
+            selectedRating = parseInt(this.getAttribute('data-rating'));
+            ratingInput.value = selectedRating;
+            updateStars(selectedRating);
+        });
+
+        star.addEventListener('mouseenter', function() {
+            const hoverRating = parseInt(this.getAttribute('data-rating'));
+            updateStars(hoverRating, true);
+        });
+    });
+
+    // Reset on mouse leave
+    document.getElementById('starRating').addEventListener('mouseleave', function() {
+        updateStars(selectedRating);
+    });
+
+    function updateStars(rating, isHover = false) {
+        stars.forEach((star, index) => {
+            const starRating = index + 1;
+            if (starRating <= rating) {
+                star.classList.remove('bi-star');
+                star.classList.add('bi-star-fill');
+            } else {
+                star.classList.remove('bi-star-fill');
+                star.classList.add('bi-star');
+            }
+        });
+    }
+
+    // Form validation
+    document.getElementById('feedbackForm').addEventListener('submit', function(e) {
+        if (!ratingInput.value || ratingInput.value < 1 || ratingInput.value > 5) {
+            e.preventDefault();
+            alert('Please select a rating (1-5 stars)');
+            return false;
+        }
+    });
+});
+</script>
+
+<style>
+.star-rating i {
+    transition: transform 0.2s;
+}
+.star-rating i:hover {
+    transform: scale(1.2);
+}
+</style>
+
+{% endblock %}

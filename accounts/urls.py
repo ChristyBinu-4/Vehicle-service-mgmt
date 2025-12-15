@@ -11,6 +11,7 @@ urlpatterns = [
     path('payment/', views.user_payment, name="user_payment"),
     path('payment/<int:booking_id>/process/', views.process_payment, name="process_payment"),
     path('work-history/', views.user_work_history, name="user_work_history"),
+    path('feedback/<int:booking_id>/submit/', views.submit_feedback, name="submit_feedback"),
     path('profile/', views.user_profile, name="user_profile"),
     path('logout/', views.user_logout, name='logout'), 
     path("book-service/<int:servicer_id>/", views.book_service, name="book_service"),

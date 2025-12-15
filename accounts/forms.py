@@ -1139,13 +1139,50 @@ class CompleteWorkForm(forms.Form):
 
 
 class FeedbackForm(forms.ModelForm):
+    """
+    Form for submitting feedback.
+    
+    Fields:
+    - rating: Required, 1-5 stars
+    - message: Required, feedback text
+    """
+    rating = forms.IntegerField(
+        required=True,
+        min_value=1,
+        max_value=5,
+        widget=forms.HiddenInput(),  # Will be set via JavaScript star clicks
+        help_text='Rating from 1 to 5 stars'
+    )
+    
     class Meta:
         model = Feedback
-        fields = ['message']
+        fields = ['rating', 'message']
         widgets = {
             'message': forms.Textarea(attrs={
                 'class': 'form-control',
-                'rows': 3,
-                'placeholder': 'Write your feedback here...',
-            })
+                'rows': 5,
+                'placeholder': 'Enter your feedback message...',
+            }),
         }
+        labels = {
+            'message': 'Feedback Message',
+        }
+        help_texts = {
+            'message': 'Please share your experience with this service',
+        }
+    
+    def clean_rating(self):
+        """Validate rating is between 1 and 5."""
+        rating = self.cleaned_data.get('rating')
+        if rating is None:
+            raise forms.ValidationError("Please select a rating.")
+        if rating < 1 or rating > 5:
+            raise forms.ValidationError("Rating must be between 1 and 5 stars.")
+        return rating
+    
+    def clean_message(self):
+        """Validate message is not empty."""
+        message = self.cleaned_data.get('message', '')
+        if not message or not message.strip():
+            raise forms.ValidationError("Feedback message is required.")
+        return message.strip()

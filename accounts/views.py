@@ -13,6 +13,7 @@ from .forms import (
     AcceptBookingForm, DiagnosisForm, ProgressUpdateForm, CompleteWorkForm
 )
 from .models import Feedback, WorkProgress, Servicer, Booking, Diagnosis
+from django.db.models import Avg
 
 
 def user_role_required(view_func):
@@ -391,8 +392,87 @@ def user_work_history(request):
         payment_status='Paid'
     ).order_by('-payment_date', '-created_at')
     
+    # Check which bookings already have feedback
+    bookings_with_feedback = set(
+        Feedback.objects.filter(booking__in=completed_bookings).values_list('booking_id', flat=True)
+    )
+    
     return render(request, "work_history.html", {
         'completed_bookings': completed_bookings,
+        'bookings_with_feedback': bookings_with_feedback,
+    })
+
+
+@login_required
+@user_role_required
+def submit_feedback(request, booking_id):
+    """
+    Submit feedback for a completed booking.
+    
+    Preconditions:
+    - User is authenticated (enforced by decorators)
+    - Booking belongs to logged-in user
+    - booking.status == "Completed"
+    - booking.payment_status == "Paid"
+    - Feedback does NOT already exist for this booking
+    
+    On submit:
+    - Create Feedback record linked to user, booking, and servicer
+    - Save rating and message
+    - Update servicer rating (aggregated average)
+    - Redirect to Work History with success message
+    """
+    # Validate booking belongs to user
+    booking = get_object_or_404(Booking, id=booking_id, user=request.user)
+    
+    # Precondition: Only allow feedback for Completed bookings with Paid payment
+    if booking.status != 'Completed':
+        messages.error(request, f"Cannot submit feedback. Booking status must be Completed. Current status: {booking.get_status_display()}")
+        return redirect("user_work_history")
+    
+    if booking.payment_status != 'Paid':
+        messages.error(request, "Cannot submit feedback. Payment must be completed first.")
+        return redirect("user_work_history")
+    
+    # Precondition: Prevent duplicate feedback
+    if hasattr(booking, 'feedback'):
+        messages.warning(request, "You have already submitted feedback for this booking.")
+        return redirect("user_work_history")
+    
+    if request.method == "POST":
+        form = FeedbackForm(request.POST)
+        if form.is_valid():
+            # Double-check feedback doesn't exist (race condition protection)
+            booking.refresh_from_db()
+            if hasattr(booking, 'feedback'):
+                messages.warning(request, "Feedback already exists for this booking.")
+                return redirect("user_work_history")
+            
+            # Create feedback
+            feedback = form.save(commit=False)
+            feedback.user = request.user
+            feedback.booking = booking
+            feedback.servicer = booking.servicer
+            feedback.save()
+            
+            # Update servicer rating (aggregated average)
+            servicer = booking.servicer
+            all_feedbacks = Feedback.objects.filter(servicer=servicer)
+            if all_feedbacks.exists():
+                avg_rating = all_feedbacks.aggregate(
+                    avg_rating=Avg('rating')
+                )['avg_rating']
+                servicer.rating = round(avg_rating, 1)
+                servicer.save()
+            
+            messages.success(request, "Thank you! Your feedback has been submitted successfully.")
+            return redirect("user_work_history")
+    else:
+        form = FeedbackForm()
+    
+    return render(request, "submit_feedback.html", {
+        'booking': booking,
+        'form': form,
     })
 
 @login_required
