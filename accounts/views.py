@@ -14,7 +14,7 @@ from .forms import (
     ServicerRegisterForm, ServicerProfileUpdateForm, RejectBookingForm, 
     AcceptBookingForm, DiagnosisForm, ProgressUpdateForm, CompleteWorkForm
 )
-from .models import Feedback, WorkProgress, Servicer, Booking, Diagnosis
+from .models import Feedback, WorkProgress, Servicer, Booking, Diagnosis, SystemSettings
 
 
 def user_role_required(view_func):
@@ -1656,16 +1656,52 @@ def admin_settings(request):
     """
     Admin settings page.
     Allows:
-    - Update landing page image
+    - Update background images (User and Servicer interfaces)
     - Add additional admin users
     """
     from .models import User
     
-    # Handle add admin user
+    # Get or create SystemSettings instance (singleton)
+    settings = SystemSettings.get_settings()
+    
+    # Handle form submissions
     if request.method == "POST":
         action = request.POST.get('action')
         
-        if action == 'add_admin':
+        if action == 'update_images':
+            # Handle background image uploads
+            user_bg = request.FILES.get('user_background_image')
+            servicer_bg = request.FILES.get('servicer_background_image')
+            
+            updated = False
+            
+            if user_bg:
+                # Validate image file
+                if not user_bg.content_type.startswith('image/'):
+                    messages.error(request, "User background must be an image file.")
+                else:
+                    # Delete old image if exists
+                    if settings.user_background_image:
+                        settings.user_background_image.delete(save=False)
+                    settings.user_background_image = user_bg
+                    updated = True
+            
+            if servicer_bg:
+                # Validate image file
+                if not servicer_bg.content_type.startswith('image/'):
+                    messages.error(request, "Servicer background must be an image file.")
+                else:
+                    # Delete old image if exists
+                    if settings.servicer_background_image:
+                        settings.servicer_background_image.delete(save=False)
+                    settings.servicer_background_image = servicer_bg
+                    updated = True
+            
+            if updated:
+                settings.save()
+                messages.success(request, "Background images updated successfully.")
+        
+        elif action == 'add_admin':
             username = request.POST.get('username', '').strip()
             password = request.POST.get('password', '').strip()
             email = request.POST.get('email', '').strip()
@@ -1692,7 +1728,9 @@ def admin_settings(request):
         
         return redirect("admin_settings")
     
-    return render(request, "admin_settings.html")
+    return render(request, "admin_settings.html", {
+        'settings': settings,
+    })
 
 
 @login_required

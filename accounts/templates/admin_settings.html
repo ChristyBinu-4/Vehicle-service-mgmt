@@ -16,19 +16,70 @@
         <h2 class="fw-bold">Admin Settings</h2>
     </header>
 
-    <!-- Change Landing Page Image -->
+    <!-- UI Customization Section -->
     <div class="bg-white p-4 rounded shadow-sm mb-4">
-        <h5 class="fw-semibold mb-3">Change Landing Page Image</h5>
-        <p class="text-muted">This functionality will be implemented in future updates.</p>
+        <h5 class="fw-semibold mb-3">UI Customization</h5>
+        <p class="text-muted mb-4">Manage background images for User and Servicer interfaces.</p>
+        
         <form method="POST" enctype="multipart/form-data">
             {% csrf_token %}
-            <input type="hidden" name="action" value="update_image">
-            <div class="mb-3">
-                <label for="landing_image" class="form-label">Upload Landing Page Image</label>
-                <input type="file" class="form-control" id="landing_image" name="landing_image" accept="image/*" disabled>
-                <small class="form-text text-muted">Image upload functionality coming soon.</small>
+            <input type="hidden" name="action" value="update_images">
+            
+            <div class="row g-4">
+                <!-- User Background Image -->
+                <div class="col-md-6">
+                    <div class="card border">
+                        <div class="card-header bg-primary text-white">
+                            <h6 class="mb-0 fw-semibold">User Interface Background</h6>
+                        </div>
+                        <div class="card-body">
+                            {% if settings.user_background_image %}
+                            <div class="mb-3">
+                                <label class="form-label">Current Image:</label>
+                                <div class="border rounded p-2 bg-light">
+                                    <img src="{{ settings.user_background_image.url }}" alt="User Background" class="img-fluid" style="max-height: 150px;">
+                                </div>
+                            </div>
+                            {% endif %}
+                            <div class="mb-3">
+                                <label for="user_background_image" class="form-label">Upload New Image</label>
+                                <input type="file" class="form-control" id="user_background_image" name="user_background_image" accept="image/*">
+                                <small class="form-text text-muted">Upload a new background image for User interface. Accepted formats: JPG, PNG, GIF</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Servicer Background Image -->
+                <div class="col-md-6">
+                    <div class="card border">
+                        <div class="card-header bg-info text-white">
+                            <h6 class="mb-0 fw-semibold">Servicer Interface Background</h6>
+                        </div>
+                        <div class="card-body">
+                            {% if settings.servicer_background_image %}
+                            <div class="mb-3">
+                                <label class="form-label">Current Image:</label>
+                                <div class="border rounded p-2 bg-light">
+                                    <img src="{{ settings.servicer_background_image.url }}" alt="Servicer Background" class="img-fluid" style="max-height: 150px;">
+                                </div>
+                            </div>
+                            {% endif %}
+                            <div class="mb-3">
+                                <label for="servicer_background_image" class="form-label">Upload New Image</label>
+                                <input type="file" class="form-control" id="servicer_background_image" name="servicer_background_image" accept="image/*">
+                                <small class="form-text text-muted">Upload a new background image for Servicer interface. Accepted formats: JPG, PNG, GIF</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
-            <button type="submit" class="btn btn-primary" disabled>Update Image</button>
+            
+            <div class="mt-4">
+                <button type="submit" class="btn btn-primary">
+                    <i class="bi bi-save me-1"></i>Save Changes
+                </button>
+            </div>
         </form>
     </div>
 

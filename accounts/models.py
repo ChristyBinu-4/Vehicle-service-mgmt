@@ -268,3 +268,40 @@ class Diagnosis(models.Model):
         if self.work_items:
             return [item.strip() for item in self.work_items.split(",") if item.strip()]
         return []
+
+
+class SystemSettings(models.Model):
+    """
+    System-wide settings model (singleton pattern).
+    Stores background images for User and Servicer interfaces.
+    Only ONE instance should exist.
+    """
+    user_background_image = models.ImageField(
+        upload_to='system/user_backgrounds/',
+        blank=True,
+        null=True,
+        help_text="Background image for User interface"
+    )
+    servicer_background_image = models.ImageField(
+        upload_to='system/servicer_backgrounds/',
+        blank=True,
+        null=True,
+        help_text="Background image for Servicer interface"
+    )
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = "System Settings"
+        verbose_name_plural = "System Settings"
+
+    def __str__(self):
+        return "System Settings"
+
+    @classmethod
+    def get_settings(cls):
+        """
+        Get or create the singleton SystemSettings instance.
+        Ensures only ONE row exists.
+        """
+        settings, created = cls.objects.get_or_create(pk=1)
+        return settings
