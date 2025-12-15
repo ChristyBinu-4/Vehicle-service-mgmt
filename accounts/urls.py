@@ -23,6 +23,8 @@ urlpatterns = [
     path('servicer/login/', views.servicer_login, name='servicer_login'),
     path('servicer/register/', views.servicer_register, name='servicer_register'),
     path('servicer/home/', views.servicer_home, name='servicer_home'),
+    path('servicer/work-history/', views.servicer_work_history, name='servicer_work_history'),
+    path('servicer/feedback/', views.servicer_feedback, name='servicer_feedback'),
     path('servicer/profile/', views.servicer_profile, name='servicer_profile'),
     path('servicer/logout/', views.servicer_logout, name='servicer_logout'),
     

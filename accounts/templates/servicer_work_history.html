@@ -1,0 +1,86 @@
+{% extends "servicer_sidebar.html" %}
+{% block content %}
+
+<div class="container-fluid p-4">
+    <!-- Success/Error Messages -->
+    {% if messages %}
+        {% for message in messages %}
+        <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+        {% endfor %}
+    {% endif %}
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h3 class="fw-bold mb-1">Work History</h3>
+            <p class="text-muted mb-0">Completed and paid services</p>
+        </div>
+    </div>
+
+    {% if completed_bookings %}
+        <div class="row g-4">
+            {% for booking in completed_bookings %}
+            <div class="col-md-6 col-lg-4">
+                <div class="card h-100 shadow-sm">
+                    <div class="card-header bg-success text-white">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <h6 class="mb-0 fw-semibold">SRV-{{ booking.id }}</h6>
+                            <span class="badge bg-light text-success">Paid</span>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <h6 class="fw-semibold mb-2">{{ booking.user.first_name }} {{ booking.user.last_name }}</h6>
+                        <p class="text-muted small mb-2">
+                            <i class="bi bi-envelope me-1"></i>{{ booking.user.email }}
+                        </p>
+                        <p class="text-muted small mb-2">
+                            <i class="bi bi-wrench me-1"></i>{{ booking.work_type }}
+                        </p>
+                        <p class="text-muted small mb-2">
+                            <i class="bi bi-car-front me-1"></i>{{ booking.vehicle_make }} {{ booking.vehicle_model }}
+                        </p>
+                        <p class="text-muted small mb-2">
+                            <i class="bi bi-123 me-1"></i>{{ booking.vehicle_number }}
+                        </p>
+                        <hr>
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <span class="text-muted small">Amount Earned:</span>
+                            <h6 class="mb-0 text-success fw-bold">₹{{ booking.final_amount }}</h6>
+                        </div>
+                        <p class="text-muted small mb-0">
+                            <i class="bi bi-calendar-check me-1"></i>
+                            Completed: {{ booking.payment_date|date:"M d, Y" }}
+                        </p>
+                        {% if booking.completion_notes %}
+                        <div class="mt-3">
+                            <small class="text-muted">
+                                <i class="bi bi-file-text me-1"></i>
+                                {{ booking.completion_notes|truncatewords:10 }}
+                            </small>
+                        </div>
+                        {% endif %}
+                    </div>
+                    <div class="card-footer bg-transparent">
+                        <a href="{% url 'servicer_booking_detail' booking.id %}" class="btn btn-outline-primary w-100">
+                            <i class="bi bi-eye me-1"></i>View Details
+                        </a>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="text-center py-5">
+            <i class="bi bi-inbox fs-1 text-muted mb-3 d-block"></i>
+            <h5 class="text-muted">No Work History</h5>
+            <p class="text-muted">You don't have any completed and paid services yet.</p>
+            <a href="{% url 'servicer_worklist' %}" class="btn btn-outline-primary">
+                View Worklist
+            </a>
+        </div>
+    {% endif %}
+</div>
+
+{% endblock %}

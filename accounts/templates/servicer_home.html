@@ -19,54 +19,54 @@
 
     <!-- Summary Cards -->
     <div class="row g-4 mb-4">
-        <!-- Total Requests Card -->
+        <!-- Total Jobs Assigned Card -->
         <div class="col-md-3">
             <div class="card border-0 shadow-sm h-100">
                 <div class="card-body">
                     <div class="d-flex justify-content-between align-items-center">
                         <div>
-                            <h6 class="text-muted mb-1">Total Requests</h6>
-                            <h3 class="fw-bold mb-0">{{ total_requests }}</h3>
+                            <h6 class="text-muted mb-1">Total Jobs Assigned</h6>
+                            <h3 class="fw-bold mb-0">{{ total_jobs_assigned }}</h3>
                         </div>
                         <div class="text-primary">
                             <span class="material-symbols-outlined" style="font-size: 40px;">assignment</span>
                         </div>
                     </div>
-                    <a href="{% url 'servicer_worklist' %}?tab=requested" class="btn btn-sm btn-outline-primary mt-3 w-100">
-                        View Requests
+                    <a href="{% url 'servicer_worklist' %}" class="btn btn-sm btn-outline-primary mt-3 w-100">
+                        View All Jobs
                     </a>
                 </div>
             </div>
         </div>
 
-        <!-- Pending Requests Card -->
+        <!-- Jobs Completed Card -->
         <div class="col-md-3">
             <div class="card border-0 shadow-sm h-100">
                 <div class="card-body">
                     <div class="d-flex justify-content-between align-items-center">
                         <div>
-                            <h6 class="text-muted mb-1">Pending</h6>
-                            <h3 class="fw-bold mb-0">{{ pending_requests }}</h3>
+                            <h6 class="text-muted mb-1">Jobs Completed</h6>
+                            <h3 class="fw-bold mb-0">{{ jobs_completed }}</h3>
                         </div>
-                        <div class="text-warning">
-                            <span class="material-symbols-outlined" style="font-size: 40px;">pending</span>
+                        <div class="text-success">
+                            <span class="material-symbols-outlined" style="font-size: 40px;">check_circle</span>
                         </div>
                     </div>
-                    <a href="{% url 'servicer_worklist' %}?tab=pending" class="btn btn-sm btn-outline-warning mt-3 w-100">
-                        View Pending
+                    <a href="{% url 'servicer_work_history' %}" class="btn btn-sm btn-outline-success mt-3 w-100">
+                        View History
                     </a>
                 </div>
             </div>
         </div>
 
-        <!-- Ongoing Works Card -->
+        <!-- Ongoing Jobs Card -->
         <div class="col-md-3">
             <div class="card border-0 shadow-sm h-100">
                 <div class="card-body">
                     <div class="d-flex justify-content-between align-items-center">
                         <div>
-                            <h6 class="text-muted mb-1">Ongoing Works</h6>
-                            <h3 class="fw-bold mb-0">{{ ongoing_works }}</h3>
+                            <h6 class="text-muted mb-1">Ongoing Jobs</h6>
+                            <h3 class="fw-bold mb-0">{{ ongoing_jobs }}</h3>
                         </div>
                         <div class="text-info">
                             <span class="material-symbols-outlined" style="font-size: 40px;">work</span>
@@ -79,37 +79,110 @@
             </div>
         </div>
 
-        <!-- Completed Works Card -->
+        <!-- Total Earnings Card -->
         <div class="col-md-3">
             <div class="card border-0 shadow-sm h-100">
                 <div class="card-body">
                     <div class="d-flex justify-content-between align-items-center">
                         <div>
-                            <h6 class="text-muted mb-1">Completed</h6>
-                            <h3 class="fw-bold mb-0">{{ completed_works }}</h3>
+                            <h6 class="text-muted mb-1">Total Earnings</h6>
+                            <h3 class="fw-bold mb-0">₹{{ total_earnings|floatformat:2 }}</h3>
                         </div>
                         <div class="text-success">
-                            <span class="material-symbols-outlined" style="font-size: 40px;">check_circle</span>
+                            <span class="material-symbols-outlined" style="font-size: 40px;">payments</span>
                         </div>
                     </div>
-                    <a href="{% url 'servicer_worklist' %}?tab=completed" class="btn btn-sm btn-outline-success mt-3 w-100">
-                        View Completed
+                    <a href="{% url 'servicer_work_history' %}" class="btn btn-sm btn-outline-success mt-3 w-100">
+                        View Earnings
                     </a>
                 </div>
             </div>
         </div>
     </div>
 
+    <!-- Earnings Breakdown -->
+    <div class="row g-4 mb-4">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0 fw-semibold">Earnings Breakdown</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row g-4">
+                        <div class="col-md-4">
+                            <div class="text-center p-3 bg-light rounded">
+                                <h6 class="text-muted mb-2">Today</h6>
+                                <h4 class="fw-bold text-primary mb-0">₹{{ today_earnings|floatformat:2 }}</h4>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="text-center p-3 bg-light rounded">
+                                <h6 class="text-muted mb-2">This Month</h6>
+                                <h4 class="fw-bold text-success mb-0">₹{{ month_earnings|floatformat:2 }}</h4>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="text-center p-3 bg-light rounded">
+                                <h6 class="text-muted mb-2">This Year</h6>
+                                <h4 class="fw-bold text-info mb-0">₹{{ year_earnings|floatformat:2 }}</h4>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Rating Summary -->
+    {% if avg_rating %}
+    <div class="row g-4 mb-4">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="text-muted mb-1">Average Rating</h6>
+                            <h3 class="fw-bold mb-0">{{ avg_rating|floatformat:1 }} ⭐</h3>
+                            <small class="text-muted">Based on {{ total_ratings }} rating{{ total_ratings|pluralize }}</small>
+                        </div>
+                        <div class="text-warning">
+                            <span class="material-symbols-outlined" style="font-size: 50px;">star</span>
+                        </div>
+                    </div>
+                    <a href="{% url 'servicer_feedback' %}" class="btn btn-sm btn-outline-warning mt-3">
+                        View All Feedback
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
     <!-- Recent Feedback -->
     <div class="bg-white p-4 rounded shadow-sm">
-        <h5 class="fw-semibold mb-3">Recent Feedback</h5>
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h5 class="fw-semibold mb-0">Recent Feedback</h5>
+            <a href="{% url 'servicer_feedback' %}" class="btn btn-sm btn-outline-primary">View All</a>
+        </div>
         {% if recent_feedback %}
             <div class="list-group">
                 {% for feedback in recent_feedback %}
                 <div class="list-group-item">
                     <div class="d-flex justify-content-between align-items-start">
                         <div class="flex-grow-1">
-                            <h6 class="mb-1">{{ feedback.user.username }}</h6>
+                            <div class="d-flex align-items-center gap-2 mb-2">
+                                <h6 class="mb-0">{{ feedback.user.username }}</h6>
+                                <span class="badge bg-warning text-dark">
+                                    {% for i in "12345" %}
+                                        {% if forloop.counter <= feedback.rating %}
+                                            ⭐
+                                        {% else %}
+                                            ☆
+                                        {% endif %}
+                                    {% endfor %}
+                                    {{ feedback.rating }}/5
+                                </span>
+                            </div>
                             <p class="mb-1">{{ feedback.message }}</p>
                             <small class="text-muted">{{ feedback.created_at|date:"M d, Y h:i A" }}</small>
                         </div>

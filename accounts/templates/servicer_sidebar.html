@@ -67,14 +67,14 @@
             Worklist
         </a>
 
-        <a href="#" class="{% if current == 'servicer_payments' %}active{% endif %}">
-            <span class="material-symbols-outlined">payment</span>
-            Payments
-        </a>
-
-        <a href="#" class="{% if current == 'servicer_work_history' %}active{% endif %}">
+        <a href="{% url 'servicer_work_history' %}" class="{% if current == 'servicer_work_history' %}active{% endif %}">
             <span class="material-symbols-outlined">history</span>
             Work History
+        </a>
+
+        <a href="{% url 'servicer_feedback' %}" class="{% if current == 'servicer_feedback' %}active{% endif %}">
+            <span class="material-symbols-outlined">rate_review</span>
+            Feedback
         </a>
 
     </nav>

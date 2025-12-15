@@ -2,9 +2,11 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import authenticate, login, logout, update_session_auth_hash
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
-from django.db.models import Q
+from django.db.models import Q, Sum, Avg
 from django.urls import reverse
 from django.http import HttpResponseRedirect
+from django.utils import timezone
+from datetime import datetime, timedelta
 from functools import wraps
 
 from .forms import (
@@ -13,7 +15,6 @@ from .forms import (
     AcceptBookingForm, DiagnosisForm, ProgressUpdateForm, CompleteWorkForm
 )
 from .models import Feedback, WorkProgress, Servicer, Booking, Diagnosis
-from django.db.models import Avg
 
 
 def user_role_required(view_func):
@@ -758,10 +759,18 @@ def servicer_register(request):
 def servicer_home(request):
     """
     Servicer dashboard/home page.
-    Shows summary cards and recent feedback.
-    - Only accessible to logged-in servicers
-    - Shows summary statistics
-    - Shows recent feedback list
+    Shows summary cards, earnings breakdown, and recent feedback.
+    
+    Summary cards:
+    - Total Jobs Assigned (all bookings for servicer)
+    - Jobs Completed (status == "Completed")
+    - Ongoing Jobs (status == "Ongoing")
+    - Total Earnings (sum of paid bookings)
+    
+    Earnings breakdown:
+    - Today
+    - This Month
+    - This Year
     """
     # Get servicer associated with logged-in user (match by email)
     try:
@@ -771,26 +780,150 @@ def servicer_home(request):
         return redirect("servicer_login")
     
     # Get booking statistics
-    total_requests = Booking.objects.filter(servicer=servicer, status='Requested').count()
-    pending_requests = Booking.objects.filter(servicer=servicer, status='Pending').count()
-    ongoing_works = Booking.objects.filter(servicer=servicer, status='Ongoing').count()
-    completed_works = Booking.objects.filter(servicer=servicer, status='Completed').count()
+    total_jobs_assigned = Booking.objects.filter(servicer=servicer).count()
+    jobs_completed = Booking.objects.filter(servicer=servicer, status='Completed').count()
+    ongoing_jobs = Booking.objects.filter(servicer=servicer, status='Ongoing').count()
     
-    # Get recent feedback (limit to 5 most recent)
+    # Calculate total earnings from paid bookings
+    # Earnings = sum of final_amount where payment_status == "Paid"
+    total_earnings = Booking.objects.filter(
+        servicer=servicer,
+        status='Completed',
+        payment_status='Paid'
+    ).aggregate(total=Sum('final_amount'))['total'] or 0
+    
+    # Earnings breakdown by time period
+    now = timezone.now()
+    today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
+    month_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+    year_start = now.replace(month=1, day=1, hour=0, minute=0, second=0, microsecond=0)
+    
+    # Today's earnings
+    today_earnings = Booking.objects.filter(
+        servicer=servicer,
+        status='Completed',
+        payment_status='Paid',
+        payment_date__gte=today_start
+    ).aggregate(total=Sum('final_amount'))['total'] or 0
+    
+    # This month's earnings
+    month_earnings = Booking.objects.filter(
+        servicer=servicer,
+        status='Completed',
+        payment_status='Paid',
+        payment_date__gte=month_start
+    ).aggregate(total=Sum('final_amount'))['total'] or 0
+    
+    # This year's earnings
+    year_earnings = Booking.objects.filter(
+        servicer=servicer,
+        status='Completed',
+        payment_status='Paid',
+        payment_date__gte=year_start
+    ).aggregate(total=Sum('final_amount'))['total'] or 0
+    
+    # Get recent feedback (limit to 5 most recent) - only for this servicer's bookings
     recent_feedback = Feedback.objects.filter(
-        user__in=Booking.objects.filter(servicer=servicer).values_list('user', flat=True)
+        servicer=servicer
     ).order_by('-created_at')[:5]
+    
+    # Calculate average rating from all feedbacks
+    all_feedbacks = Feedback.objects.filter(servicer=servicer)
+    if all_feedbacks.exists():
+        avg_rating = all_feedbacks.aggregate(avg_rating=Avg('rating'))['avg_rating']
+        total_ratings = all_feedbacks.count()
+    else:
+        avg_rating = None
+        total_ratings = 0
     
     servicer_name = request.user.first_name or request.user.username
     
     return render(request, "servicer_home.html", {
         "servicer_name": servicer_name,
         "servicer": servicer,
-        "total_requests": total_requests,
-        "pending_requests": pending_requests,
-        "ongoing_works": ongoing_works,
-        "completed_works": completed_works,
+        "total_jobs_assigned": total_jobs_assigned,
+        "jobs_completed": jobs_completed,
+        "ongoing_jobs": ongoing_jobs,
+        "total_earnings": total_earnings,
+        "today_earnings": today_earnings,
+        "month_earnings": month_earnings,
+        "year_earnings": year_earnings,
         "recent_feedback": recent_feedback,
+        "avg_rating": avg_rating,
+        "total_ratings": total_ratings,
+    })
+
+
+@login_required
+@servicer_role_required
+def servicer_work_history(request):
+    """
+    Servicer Work History page.
+    Shows completed and paid bookings for the servicer.
+    
+    Filters:
+    - booking.servicer == logged-in servicer
+    - booking.status == "Completed"
+    - booking.payment_status == "Paid"
+    """
+    # Get servicer associated with logged-in user
+    try:
+        servicer = Servicer.objects.get(email=request.user.email)
+    except Servicer.DoesNotExist:
+        messages.error(request, "Servicer profile not found. Please contact support.")
+        return redirect("servicer_login")
+    
+    # Get completed and paid bookings
+    completed_bookings = Booking.objects.filter(
+        servicer=servicer,
+        status='Completed',
+        payment_status='Paid'
+    ).order_by('-payment_date', '-created_at')
+    
+    return render(request, "servicer_work_history.html", {
+        'completed_bookings': completed_bookings,
+        'servicer': servicer,
+    })
+
+
+@login_required
+@servicer_role_required
+def servicer_feedback(request):
+    """
+    Servicer Feedback page.
+    Shows all feedback related to servicer's bookings.
+    
+    Feedback display:
+    - User name (or masked username)
+    - Rating (stars)
+    - Feedback message
+    - Date submitted
+    """
+    # Get servicer associated with logged-in user
+    try:
+        servicer = Servicer.objects.get(email=request.user.email)
+    except Servicer.DoesNotExist:
+        messages.error(request, "Servicer profile not found. Please contact support.")
+        return redirect("servicer_login")
+    
+    # Get all feedback for this servicer's bookings
+    feedbacks = Feedback.objects.filter(
+        servicer=servicer
+    ).order_by('-created_at')
+    
+    # Calculate average rating
+    if feedbacks.exists():
+        avg_rating = feedbacks.aggregate(avg_rating=Avg('rating'))['avg_rating']
+        total_ratings = feedbacks.count()
+    else:
+        avg_rating = None
+        total_ratings = 0
+    
+    return render(request, "servicer_feedback.html", {
+        'feedbacks': feedbacks,
+        'servicer': servicer,
+        'avg_rating': avg_rating,
+        'total_ratings': total_ratings,
     })
 
 
