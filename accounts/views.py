@@ -46,13 +46,20 @@ def servicer_role_required(view_func):
         if not request.user.is_authenticated:
             return redirect('servicer_login')
         
-        if request.user.role != 'SERVICER':
+        # Check if user has SERVICER role
+        # Note: request.user should be authenticated at this point due to @login_required
+        # but we check is_authenticated again for safety
+        if not request.user.is_authenticated or request.user.role != 'SERVICER':
             # User is logged in but not a SERVICER role
-            logout(request)
-            if request.user.role == 'USER':
-                return HttpResponseRedirect(reverse("login_page") + "?error=invalid_role")
+            if request.user.is_authenticated:
+                user_role = request.user.role
+                logout(request)
+                if user_role == 'USER':
+                    return HttpResponseRedirect(reverse("login_page") + "?error=invalid_role")
+                else:
+                    return HttpResponseRedirect(reverse("servicer_login") + "?error=invalid_role")
             else:
-                return HttpResponseRedirect(reverse("servicer_login") + "?error=invalid_role")
+                return redirect('servicer_login')
         
         return view_func(request, *args, **kwargs)
     return wrapper
