@@ -1,6 +1,16 @@
 {% extends "servicer_sidebar.html" %}
 {% block content %}
 
+<!-- Success/Error Messages -->
+{% if messages %}
+    {% for message in messages %}
+    <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+        {{ message }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+    {% endfor %}
+{% endif %}
+
 <style>
     .detail-card {
         background: #fff;
@@ -70,21 +80,55 @@
     {% if booking.status == 'Requested' %}
         <!-- Accept/Reject buttons -->
         <div class="detail-card">
+            <h5 class="fw-semibold mb-3">Actions</h5>
             <div class="d-flex gap-2">
                 <a href="{% url 'accept_booking' booking.id %}" class="btn btn-success">
                     Accept Request
                 </a>
-                <a href="{% url 'reject_booking' booking.id %}" class="btn btn-danger">
+                <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#rejectModal">
                     Reject Request
-                </a>
+                </button>
             </div>
         </div>
-    {% elif booking.status == 'Accepted' %}
-        <!-- Send Diagnosis button -->
+        
+        <!-- Reject Modal -->
+        <div class="modal fade" id="rejectModal" tabindex="-1" aria-labelledby="rejectModalLabel" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="rejectModalLabel">Reject Booking #SRV-{{ booking.id }}</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <form method="POST" action="{% url 'reject_booking' booking.id %}">
+                        {% csrf_token %}
+                        <div class="modal-body">
+                            <p class="mb-3">Please provide a reason for rejecting this service request.</p>
+                            <div class="mb-3">
+                                <label for="reason" class="form-label fw-semibold">Reason <span class="text-danger">*</span></label>
+                                <textarea class="form-control" id="reason" name="reason" rows="4" required placeholder="Enter reason for rejecting this service request..."></textarea>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                            <button type="submit" class="btn btn-danger">Reject Booking</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    {% elif booking.status == 'Pending' %}
+        <!-- Send Diagnosis button (if not already created) -->
         <div class="detail-card">
+            {% if not diagnosis %}
             <a href="{% url 'create_diagnosis' booking.id %}" class="btn btn-primary">
                 Send Diagnosis
             </a>
+            {% else %}
+            <div class="alert alert-info">
+                <strong>Diagnosis Submitted</strong>
+                <p class="mb-0">Diagnosis has been submitted and is waiting for user approval.</p>
+            </div>
+            {% endif %}
         </div>
     {% elif booking.status == 'Pending' %}
         <!-- Diagnosis information -->

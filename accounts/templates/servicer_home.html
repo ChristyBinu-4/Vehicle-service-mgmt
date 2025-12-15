@@ -2,21 +2,124 @@
 {% block content %}
 
 <main class="flex-grow-1 p-4">
+    <!-- Success/Error Messages -->
+    {% if messages %}
+        {% for message in messages %}
+        <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+        {% endfor %}
+    {% endif %}
 
     <header class="mb-4">
         <h2 class="fw-bold">Servicer Dashboard</h2>
+        <p class="text-muted">Welcome, {{ servicer_name }}!</p>
     </header>
 
-    <!-- Welcome Section -->
-    <div class="bg-white p-4 rounded shadow-sm mb-4">
-        <h4 class="fw-semibold">Welcome, {{ servicer_name }}!</h4>
-        <p class="text-muted mb-0">This is your servicer dashboard. Manage your service requests and bookings from here.</p>
+    <!-- Summary Cards -->
+    <div class="row g-4 mb-4">
+        <!-- Total Requests Card -->
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="text-muted mb-1">Total Requests</h6>
+                            <h3 class="fw-bold mb-0">{{ total_requests }}</h3>
+                        </div>
+                        <div class="text-primary">
+                            <span class="material-symbols-outlined" style="font-size: 40px;">assignment</span>
+                        </div>
+                    </div>
+                    <a href="{% url 'servicer_worklist' %}?tab=requested" class="btn btn-sm btn-outline-primary mt-3 w-100">
+                        View Requests
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Pending Requests Card -->
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="text-muted mb-1">Pending</h6>
+                            <h3 class="fw-bold mb-0">{{ pending_requests }}</h3>
+                        </div>
+                        <div class="text-warning">
+                            <span class="material-symbols-outlined" style="font-size: 40px;">pending</span>
+                        </div>
+                    </div>
+                    <a href="{% url 'servicer_worklist' %}?tab=pending" class="btn btn-sm btn-outline-warning mt-3 w-100">
+                        View Pending
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Ongoing Works Card -->
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="text-muted mb-1">Ongoing Works</h6>
+                            <h3 class="fw-bold mb-0">{{ ongoing_works }}</h3>
+                        </div>
+                        <div class="text-info">
+                            <span class="material-symbols-outlined" style="font-size: 40px;">work</span>
+                        </div>
+                    </div>
+                    <a href="{% url 'servicer_worklist' %}?tab=ongoing" class="btn btn-sm btn-outline-info mt-3 w-100">
+                        View Ongoing
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Completed Works Card -->
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="text-muted mb-1">Completed</h6>
+                            <h3 class="fw-bold mb-0">{{ completed_works }}</h3>
+                        </div>
+                        <div class="text-success">
+                            <span class="material-symbols-outlined" style="font-size: 40px;">check_circle</span>
+                        </div>
+                    </div>
+                    <a href="{% url 'servicer_worklist' %}?tab=completed" class="btn btn-sm btn-outline-success mt-3 w-100">
+                        View Completed
+                    </a>
+                </div>
+            </div>
+        </div>
     </div>
 
-    <!-- Placeholder sections for future implementation -->
-    <div class="bg-white p-4 rounded shadow-sm mb-4">
-        <h5 class="fw-semibold mb-3">Dashboard Overview</h5>
-        <p class="text-muted">Dashboard functionality will be implemented in future updates.</p>
+    <!-- Recent Feedback -->
+    <div class="bg-white p-4 rounded shadow-sm">
+        <h5 class="fw-semibold mb-3">Recent Feedback</h5>
+        {% if recent_feedback %}
+            <div class="list-group">
+                {% for feedback in recent_feedback %}
+                <div class="list-group-item">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div class="flex-grow-1">
+                            <h6 class="mb-1">{{ feedback.user.username }}</h6>
+                            <p class="mb-1">{{ feedback.message }}</p>
+                            <small class="text-muted">{{ feedback.created_at|date:"M d, Y h:i A" }}</small>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <p class="text-muted">No feedback yet.</p>
+        {% endif %}
     </div>
 
 </main>

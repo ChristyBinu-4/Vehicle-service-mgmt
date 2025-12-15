@@ -578,14 +578,40 @@ def servicer_register(request):
 @servicer_role_required
 def servicer_home(request):
     """
-    Servicer dashboard/home page (placeholder).
+    Servicer dashboard/home page.
+    Shows summary cards and recent feedback.
     - Only accessible to logged-in servicers
-    - Shows basic dashboard layout with sidebar
+    - Shows summary statistics
+    - Shows recent feedback list
     """
+    # Get servicer associated with logged-in user (match by email)
+    try:
+        servicer = Servicer.objects.get(email=request.user.email)
+    except Servicer.DoesNotExist:
+        messages.error(request, "Servicer profile not found. Please contact support.")
+        return redirect("servicer_login")
+    
+    # Get booking statistics
+    total_requests = Booking.objects.filter(servicer=servicer, status='Requested').count()
+    pending_requests = Booking.objects.filter(servicer=servicer, status='Pending').count()
+    ongoing_works = Booking.objects.filter(servicer=servicer, status='Ongoing').count()
+    completed_works = Booking.objects.filter(servicer=servicer, status='Completed').count()
+    
+    # Get recent feedback (limit to 5 most recent)
+    recent_feedback = Feedback.objects.filter(
+        user__in=Booking.objects.filter(servicer=servicer).values_list('user', flat=True)
+    ).order_by('-created_at')[:5]
+    
     servicer_name = request.user.first_name or request.user.username
     
     return render(request, "servicer_home.html", {
         "servicer_name": servicer_name,
+        "servicer": servicer,
+        "total_requests": total_requests,
+        "pending_requests": pending_requests,
+        "ongoing_works": ongoing_works,
+        "completed_works": completed_works,
+        "recent_feedback": recent_feedback,
     })
 
 
@@ -687,8 +713,9 @@ def servicer_booking_detail(request, booking_id):
 def accept_booking(request, booking_id):
     """
     Accept a booking request.
-    Moves status from Requested to Accepted.
+    Moves status from Requested to Pending (not Accepted).
     Requires pickup choice.
+    Logs action in WorkProgress.
     """
     # Get servicer
     try:
@@ -697,16 +724,33 @@ def accept_booking(request, booking_id):
         messages.error(request, "Servicer profile not found.")
         return redirect("servicer_worklist")
     
-    booking = get_object_or_404(Booking, id=booking_id, servicer=servicer, status='Requested')
+    # Validate booking belongs to this servicer and is in Requested status
+    booking = get_object_or_404(Booking, id=booking_id, servicer=servicer)
+    
+    # Prevent accepting already accepted/rejected bookings
+    if booking.status != 'Requested':
+        messages.error(request, f"Cannot accept booking. Current status: {booking.get_status_display()}")
+        return redirect("servicer_worklist?tab=requested")
     
     if request.method == "POST":
         form = AcceptBookingForm(request.POST)
         if form.is_valid():
-            booking.status = 'Accepted'
+            # Update booking status to Pending (not Accepted)
+            booking.status = 'Pending'
             booking.pickup_choice = form.cleaned_data['pickup_choice']
             booking.save()
-            messages.success(request, "Booking accepted successfully!")
-            return redirect("servicer_worklist?tab=pending")
+            
+            # Log action in WorkProgress
+            WorkProgress.objects.create(
+                booking=booking,
+                title="Request Accepted",
+                description=f"Service request accepted. Vehicle delivery: {booking.get_pickup_choice_display()}",
+                status="Pending"
+            )
+            
+            messages.success(request, "Booking accepted successfully! Please create diagnosis.")
+            # Redirect to diagnosis creation page
+            return redirect("create_diagnosis", booking_id=booking.id)
     else:
         form = AcceptBookingForm()
     
@@ -725,6 +769,7 @@ def reject_booking(request, booking_id):
     """
     Reject a booking request with a reason.
     Moves status to Rejected and stores reason.
+    Logs action in WorkProgress.
     """
     # Get servicer
     try:
@@ -733,14 +778,30 @@ def reject_booking(request, booking_id):
         messages.error(request, "Servicer profile not found.")
         return redirect("servicer_worklist")
     
-    booking = get_object_or_404(Booking, id=booking_id, servicer=servicer, status='Requested')
+    # Validate booking belongs to this servicer
+    booking = get_object_or_404(Booking, id=booking_id, servicer=servicer)
+    
+    # Prevent rejecting already accepted/rejected bookings
+    if booking.status != 'Requested':
+        messages.error(request, f"Cannot reject booking. Current status: {booking.get_status_display()}")
+        return redirect("servicer_worklist?tab=requested")
     
     if request.method == "POST":
         form = RejectBookingForm(request.POST)
         if form.is_valid():
+            # Update booking status to Rejected
             booking.status = 'Rejected'
             booking.rejection_reason = form.cleaned_data['reason']
             booking.save()
+            
+            # Log action in WorkProgress
+            WorkProgress.objects.create(
+                booking=booking,
+                title="Request Rejected",
+                description=f"Service request rejected. Reason: {booking.rejection_reason}",
+                status="Pending"
+            )
+            
             messages.success(request, "Booking rejected.")
             return redirect("servicer_worklist?tab=requested")
     else:
@@ -760,7 +821,8 @@ def reject_booking(request, booking_id):
 def create_diagnosis(request, booking_id):
     """
     Create diagnosis for a booking.
-    Moves status from Accepted to Pending.
+    Booking must be in Pending status (after acceptance).
+    Diagnosis creation keeps status as Pending until user approves.
     """
     # Get servicer
     try:
@@ -769,21 +831,39 @@ def create_diagnosis(request, booking_id):
         messages.error(request, "Servicer profile not found.")
         return redirect("servicer_worklist")
     
-    booking = get_object_or_404(Booking, id=booking_id, servicer=servicer, status='Accepted')
+    # Validate booking belongs to servicer and is in Pending status
+    booking = get_object_or_404(Booking, id=booking_id, servicer=servicer)
+    
+    # Only allow diagnosis creation for Pending bookings
+    if booking.status != 'Pending':
+        messages.error(request, f"Cannot create diagnosis. Booking status must be Pending. Current status: {booking.get_status_display()}")
+        return redirect("servicer_worklist?tab=pending")
     
     if request.method == "POST":
         form = DiagnosisForm(request.POST)
         if form.is_valid():
+            # Check if diagnosis already exists
+            if hasattr(booking, 'diagnosis'):
+                messages.warning(request, "Diagnosis already exists for this booking.")
+                return redirect("servicer_booking_detail", booking_id=booking.id)
+            
             # Create diagnosis
             diagnosis = form.save(commit=False)
             diagnosis.booking = booking
             diagnosis.save()
             
-            # Update booking status to Pending
-            booking.status = 'Pending'
-            booking.save()
+            # Log diagnosis creation in WorkProgress
+            WorkProgress.objects.create(
+                booking=booking,
+                title="Diagnosis Submitted",
+                description="Diagnosis report has been submitted and is waiting for user approval.",
+                status="Pending"
+            )
             
-            messages.success(request, "Diagnosis submitted successfully!")
+            # Status remains Pending (already set when booking was accepted)
+            # User will approve diagnosis to move to Ongoing
+            
+            messages.success(request, "Diagnosis submitted successfully! Waiting for user approval.")
             return redirect("servicer_worklist?tab=pending")
     else:
         form = DiagnosisForm()
