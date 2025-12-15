@@ -1,0 +1,186 @@
+{% extends "servicer_sidebar.html" %}
+{% block content %}
+
+<style>
+    .detail-card {
+        background: #fff;
+        border-radius: 8px;
+        padding: 24px;
+        margin-bottom: 24px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    .status-badge {
+        display: inline-block;
+        padding: 6px 16px;
+        border-radius: 16px;
+        font-size: 0.875rem;
+        font-weight: 500;
+    }
+    .status-requested { background: #fef3c7; color: #92400e; }
+    .status-accepted { background: #dbeafe; color: #1e40af; }
+    .status-pending { background: #fce7f3; color: #9f1239; }
+    .status-ongoing { background: #d1fae5; color: #065f46; }
+    .status-completed { background: #dcfce7; color: #166534; }
+</style>
+
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="fw-bold mb-0">Booking Details #{{ booking.id }}</h2>
+        <span class="status-badge status-{{ booking.status|lower }}">
+            {{ booking.get_status_display }}
+        </span>
+    </div>
+
+    <!-- User and Vehicle Information -->
+    <div class="detail-card">
+        <h4 class="fw-bold mb-3">User and Vehicle Information</h4>
+        <div class="row">
+            <div class="col-md-6">
+                <p><strong>Username:</strong> {{ booking.user.username }}</p>
+                <p><strong>Name:</strong> {{ booking.user.first_name }} {{ booking.user.last_name }}</p>
+                <p><strong>Email:</strong> {{ booking.user.email }}</p>
+                <p><strong>Phone:</strong> {{ booking.user.phone }}</p>
+            </div>
+            <div class="col-md-6">
+                <p><strong>Vehicle Make:</strong> {{ booking.vehicle_make }}</p>
+                <p><strong>Vehicle Model:</strong> {{ booking.vehicle_model }}</p>
+                <p><strong>Vehicle Number:</strong> {{ booking.vehicle_number }}</p>
+                <p><strong>Year:</strong> {{ booking.year }}</p>
+                <p><strong>Fuel Type:</strong> {{ booking.fuel_type }}</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Work Requested -->
+    <div class="detail-card">
+        <h4 class="fw-bold mb-3">Work Requested</h4>
+        <p><strong>Work Type:</strong> {{ booking.work_type }}</p>
+        <p><strong>Preferred Date:</strong> {{ booking.preferred_date|date:"M d, Y" }}</p>
+        <div>
+            <strong>Complaints:</strong>
+            <ul class="mt-2">
+                {% for complaint in complaint_list %}
+                <li>{{ complaint }}</li>
+                {% endfor %}
+            </ul>
+        </div>
+    </div>
+
+    <!-- Status-specific content -->
+    {% if booking.status == 'Requested' %}
+        <!-- Accept/Reject buttons -->
+        <div class="detail-card">
+            <div class="d-flex gap-2">
+                <a href="{% url 'accept_booking' booking.id %}" class="btn btn-success">
+                    Accept Request
+                </a>
+                <a href="{% url 'reject_booking' booking.id %}" class="btn btn-danger">
+                    Reject Request
+                </a>
+            </div>
+        </div>
+    {% elif booking.status == 'Accepted' %}
+        <!-- Send Diagnosis button -->
+        <div class="detail-card">
+            <a href="{% url 'create_diagnosis' booking.id %}" class="btn btn-primary">
+                Send Diagnosis
+            </a>
+        </div>
+    {% elif booking.status == 'Pending' %}
+        <!-- Diagnosis information -->
+        {% if diagnosis %}
+        <div class="detail-card">
+            <h4 class="fw-bold mb-3">Diagnosis</h4>
+            <p><strong>Report:</strong></p>
+            <p>{{ diagnosis.report }}</p>
+            <p><strong>Work Items:</strong></p>
+            <ul>
+                {% for item in diagnosis.get_work_items_list %}
+                <li>{{ item }}</li>
+                {% endfor %}
+            </ul>
+            {% if diagnosis.estimated_cost %}
+            <p><strong>Estimated Cost:</strong> ₹{{ diagnosis.estimated_cost }}</p>
+            {% endif %}
+            {% if diagnosis.estimated_completion_time %}
+            <p><strong>Estimated Completion Time:</strong> {{ diagnosis.estimated_completion_time }}</p>
+            {% endif %}
+            <p class="text-muted mt-3">Waiting for user approval...</p>
+        </div>
+        {% endif %}
+    {% elif booking.status == 'Ongoing' %}
+        <!-- Progress updates and add progress -->
+        <div class="detail-card">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h4 class="fw-bold mb-0">Work Progress</h4>
+                <a href="{% url 'add_progress_update' booking.id %}" class="btn btn-primary btn-sm">
+                    Add Progress Update
+                </a>
+            </div>
+            {% if progress_updates %}
+                {% for progress in progress_updates %}
+                <div class="border-start border-3 border-primary ps-3 mb-3">
+                    <h6>{{ progress.title }}</h6>
+                    <p class="mb-1">{{ progress.description }}</p>
+                    <small class="text-muted">
+                        Status: {{ progress.get_status_display }} | 
+                        Updated: {{ progress.updated_at|date:"M d, Y H:i" }}
+                    </small>
+                </div>
+                {% endfor %}
+            {% else %}
+                <p class="text-muted">No progress updates yet.</p>
+            {% endif %}
+        </div>
+        
+        <!-- Mark as Completed button -->
+        <div class="detail-card">
+            <a href="{% url 'mark_work_completed' booking.id %}" class="btn btn-success">
+                Mark as Completed
+            </a>
+        </div>
+    {% elif booking.status == 'Completed' %}
+        <!-- Completion details and payment request -->
+        {% if diagnosis %}
+        <div class="detail-card">
+            <h4 class="fw-bold mb-3">Completed Work</h4>
+            <p><strong>Work Items:</strong></p>
+            <ul>
+                {% for item in diagnosis.get_work_items_list %}
+                <li>{{ item }}</li>
+                {% endfor %}
+            </ul>
+            {% if booking.completion_notes %}
+            <p><strong>Completion Notes:</strong> {{ booking.completion_notes }}</p>
+            {% endif %}
+            {% if booking.final_amount %}
+            <p><strong>Final Amount:</strong> ₹{{ booking.final_amount }}</p>
+            {% endif %}
+        </div>
+        {% endif %}
+        
+        <!-- Payment request -->
+        {% if not booking.payment_requested %}
+        <div class="detail-card">
+            <a href="{% url 'request_payment' booking.id %}" class="btn btn-primary">
+                Request Payment
+            </a>
+        </div>
+        {% else %}
+        <div class="detail-card">
+            <div class="alert alert-info">
+                Payment request has been sent to the user. Waiting for payment...
+            </div>
+        </div>
+        {% endif %}
+    {% endif %}
+
+    <!-- Back button -->
+    <div class="mt-4">
+        <a href="{% url 'servicer_worklist' %}?tab={{ booking.status|lower }}" class="btn btn-secondary">
+            Back to Worklist
+        </a>
+    </div>
+</div>
+
+{% endblock %}

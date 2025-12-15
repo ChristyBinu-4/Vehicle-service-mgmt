@@ -1,0 +1,422 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <title>Servicer Registration</title>
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="{% static 'accounts/style.css' %}">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+
+<body class="bg-light">
+
+<div class="container d-flex justify-content-center align-items-center min-vh-100 px-3">
+
+    <div class="col-lg-6 col-md-8 col-sm-10 login-card position-relative">
+
+        <h3 class="fw-bold text-center mb-4">Servicer Registration</h3>
+
+        <form method="POST" novalidate id="servicerRegisterForm">
+            {% csrf_token %}
+
+            <div class="mb-3">
+                <label class="form-label">Service Center Name</label>
+                <input type="text" name="service_center_name" id="service_center_name" class="form-control {% if form.service_center_name.errors %}is-invalid{% endif %}" value="{% if form.service_center_name.value %}{{ form.service_center_name.value }}{% endif %}" required>
+                <div class="invalid-feedback small" id="service_center_name_error">
+                    {% if form.service_center_name.errors %}
+                        {% for error in form.service_center_name.errors %}
+                            {{ error }}
+                        {% endfor %}
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">Owner Name</label>
+                <input type="text" name="owner_name" id="owner_name" class="form-control {% if form.owner_name.errors %}is-invalid{% endif %}" value="{% if form.owner_name.value %}{{ form.owner_name.value }}{% endif %}" required>
+                <div class="invalid-feedback small" id="owner_name_error">
+                    {% if form.owner_name.errors %}
+                        {% for error in form.owner_name.errors %}
+                            {{ error }}
+                        {% endfor %}
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">Username</label>
+                <input type="text" name="username" id="username" class="form-control {% if form.username.errors %}is-invalid{% endif %}" value="{% if form.username.value %}{{ form.username.value }}{% endif %}" required>
+                <div class="invalid-feedback small" id="username_error">
+                    {% if form.username.errors %}
+                        {% for error in form.username.errors %}
+                            {{ error }}
+                        {% endfor %}
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">Email</label>
+                <input type="email" name="email" id="email" class="form-control {% if form.email.errors %}is-invalid{% endif %}" value="{% if form.email.value %}{{ form.email.value }}{% endif %}" required autocomplete="email">
+                <div class="invalid-feedback small" id="email_error">
+                    {% if form.email.errors %}
+                        {% for error in form.email.errors %}
+                            {{ error }}
+                        {% endfor %}
+                    {% endif %}
+                </div>
+                <div class="valid-feedback small" id="email_success" style="display: none;">✓ Valid email format</div>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">Phone Number</label>
+                <input type="text" name="phone" id="phone" maxlength="10" class="form-control {% if form.phone.errors %}is-invalid{% endif %}" value="{% if form.phone.value %}{{ form.phone.value }}{% endif %}" required autocomplete="tel" inputmode="numeric">
+                <div class="invalid-feedback small" id="phone_error">
+                    {% if form.phone.errors %}
+                        {% for error in form.phone.errors %}
+                            {{ error }}
+                        {% endfor %}
+                    {% endif %}
+                </div>
+                <div class="valid-feedback small" id="phone_success" style="display: none;">✓ Valid phone number</div>
+            </div>
+
+            <div class="mb-3 position-relative" style="min-height:80px;">
+                <div class="d-flex justify-content-between align-items-center">
+                    <label class="form-label mb-1">Password</label>
+                    <span class="info-icon" id="password-info-btn" title="Show password requirements">i</span>
+                </div>
+
+                <input type="password" name="password1" id="password1" class="form-control {% if form.password1.errors %}is-invalid{% endif %}" required autocomplete="new-password">
+                <div class="invalid-feedback small" id="password1_error">
+                    {% if form.password1.errors %}
+                        {% for error in form.password1.errors %}
+                            {{ error }}
+                        {% endfor %}
+                    {% endif %}
+                </div>
+
+                <!-- Password rules box (hidden by default, shown on info button click) -->
+                <div id="password-rules-box" class="password-rules-box" style="display: none;">
+                  <div class="fw-semibold mb-1">Password requirements:</div>
+                  <ul class="list-unstyled mb-1">
+                      <li id="rule-length"  class="rule-item invalid">✖ Minimum 8 characters</li>
+                      <li id="rule-upper"   class="rule-item invalid">✖ At least one uppercase letter</li>
+                      <li id="rule-lower"   class="rule-item invalid">✖ At least one lowercase letter</li>
+                      <li id="rule-number"  class="rule-item invalid">✖ At least one number</li>
+                  </ul>
+              </div>
+
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">Confirm Password</label>
+                <input type="password" name="password2" id="password2" class="form-control {% if form.password2.errors %}is-invalid{% endif %}" required autocomplete="new-password">
+                <div class="invalid-feedback small" id="password2_error">
+                    {% if form.password2.errors %}
+                        {% for error in form.password2.errors %}
+                            {{ error }}
+                        {% endfor %}
+                    {% endif %}
+                    {% if form.non_field_errors %}
+                        {% for error in form.non_field_errors %}
+                            {{ error }}
+                        {% endfor %}
+                    {% endif %}
+                </div>
+            </div>
+
+            <button type="submit" class="btn btn-primary w-100">Register</button>
+        </form>
+
+        <p class="text-center mt-3">
+            Already have an account? <a href="{% url 'servicer_login' %}">Login</a>
+        </p>
+
+    </div>
+
+</div>
+
+<!-- Error Modal for Registration Failure -->
+<div class="modal fade" id="registrationErrorModal" tabindex="-1" aria-labelledby="registrationErrorModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header border-0">
+        <h5 class="modal-title text-danger" id="registrationErrorModalLabel">
+          <i class="bi bi-exclamation-triangle-fill me-2"></i>Registration Failed
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body text-center py-4">
+        <div class="mb-3">
+          <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" fill="#dc3545" class="bi bi-exclamation-triangle-fill" viewBox="0 0 16 16">
+            <path d="M8.982 1.566a1.13 1.13 0 0 0-1.96 0L.165 13.233c-.457.778.091 1.767.98 1.767h13.713c.889 0 1.438-.99.98-1.767L8.982 1.566zM8 5c.535 0 .954.462.9.995l-.35 3.507a.552.552 0 0 1-1.1 0L7.1 5.995A.905.905 0 0 1 8 5zm.002 6a1 1 0 1 1 0 2 1 1 0 0 1 0-2z"/>
+          </svg>
+        </div>
+        <p class="mb-0" id="registrationErrorMessage">Registration failed. Please try again.</p>
+      </div>
+      <div class="modal-footer border-0 justify-content-center">
+        <button type="button" class="btn btn-danger" data-bs-dismiss="modal">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- JS: Bootstrap bundle -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  // Check for registration errors from URL parameters
+  const urlParams = new URLSearchParams(window.location.search);
+  if (urlParams.get('error') === 'failed') {
+    const modal = new bootstrap.Modal(document.getElementById('registrationErrorModal'));
+    document.getElementById('registrationErrorMessage').textContent = 'Registration failed. Please try again.';
+    modal.show();
+    window.history.replaceState({}, document.title, window.location.pathname);
+  } else if (urlParams.get('error') === 'exception') {
+    const modal = new bootstrap.Modal(document.getElementById('registrationErrorModal'));
+    document.getElementById('registrationErrorMessage').textContent = 'An error occurred during registration. Please try again.';
+    modal.show();
+    window.history.replaceState({}, document.title, window.location.pathname);
+  }
+
+  // Element refs
+  const emailInput = document.getElementById('email');
+  const phoneInput = document.getElementById('phone');
+  const pwInput = document.getElementById('password1');
+  const pw2Input = document.getElementById('password2');
+  const pwRulesBox = document.getElementById('password-rules-box');
+
+  // Rule elements and their base text
+  const rules = {
+    length: { el: document.getElementById('rule-length'), text: null },
+    upper:  { el: document.getElementById('rule-upper'),  text: null },
+    lower:  { el: document.getElementById('rule-lower'),  text: null },
+    number: { el: document.getElementById('rule-number'), text: null },
+  };
+  Object.values(rules).forEach(r => { if (r.el) r.text = r.el.textContent.replace(/^[✔✖]\s*/, '').trim(); });
+
+  // helpers to mark inputs
+  function markValid(el, successMsg = null) {
+    el.classList.remove('is-invalid'); el.classList.add('is-valid');
+    const err = document.getElementById(el.id + '_error'); if (err) err.textContent = '';
+    const success = document.getElementById(el.id + '_success');
+    if (success) {
+      if (successMsg) success.textContent = successMsg;
+      success.style.display = 'block';
+    }
+  }
+  function markInvalid(el, msg) {
+    el.classList.remove('is-valid'); el.classList.add('is-invalid');
+    const err = document.getElementById(el.id + '_error'); if (err) err.textContent = msg || '';
+    const success = document.getElementById(el.id + '_success');
+    if (success) success.style.display = 'none';
+  }
+  function clearValidation(el) {
+    el.classList.remove('is-valid','is-invalid');
+    const err = document.getElementById(el.id + '_error'); if (err) err.textContent = '';
+    const success = document.getElementById(el.id + '_success');
+    if (success) success.style.display = 'none';
+  }
+
+  // Email validation
+  function validateEmail(email) {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+  }
+
+  function validateEmailField() {
+    const email = emailInput.value.trim();
+    if (!email) {
+      clearValidation(emailInput);
+      return false;
+    }
+    if (validateEmail(email)) {
+      markValid(emailInput, '✓ Valid email format');
+      return true;
+    } else {
+      markInvalid(emailInput, 'Please enter a valid email address (e.g., user@example.com)');
+      return false;
+    }
+  }
+
+  // Phone validation
+  function validatePhone(phone) {
+    const phoneRegex = /^\d{10}$/;
+    return phoneRegex.test(phone);
+  }
+
+  function validatePhoneField() {
+    const phone = phoneInput.value.trim();
+    if (!phone) {
+      clearValidation(phoneInput);
+      return false;
+    }
+    
+    const digitsOnly = phone.replace(/\D/g, '');
+    
+    if (digitsOnly.length === 0) {
+      markInvalid(phoneInput, 'Phone number must contain only digits');
+      return false;
+    } else if (digitsOnly.length < 10) {
+      markInvalid(phoneInput, `Phone number must be exactly 10 digits (${digitsOnly.length}/10)`);
+      return false;
+    } else if (digitsOnly.length > 10) {
+      markInvalid(phoneInput, 'Phone number cannot exceed 10 digits');
+      return false;
+    } else if (validatePhone(digitsOnly)) {
+      if (phone !== digitsOnly) {
+        phoneInput.value = digitsOnly;
+      }
+      markValid(phoneInput, '✓ Valid phone number');
+      return true;
+    } else {
+      markInvalid(phoneInput, 'Phone number must be exactly 10 digits');
+      return false;
+    }
+  }
+
+  // Restrict phone input to digits only
+  if (phoneInput) {
+    phoneInput.addEventListener('input', function(e) {
+      let value = e.target.value.replace(/\D/g, '');
+      if (value.length > 10) {
+        value = value.slice(0, 10);
+      }
+      e.target.value = value;
+      validatePhoneField();
+    });
+    
+    phoneInput.addEventListener('blur', validatePhoneField);
+  }
+
+  // Email validation events
+  if (emailInput) {
+    emailInput.addEventListener('input', function() {
+      const email = emailInput.value.trim();
+      if (email.length > 0) {
+        validateEmailField();
+      } else {
+        clearValidation(emailInput);
+      }
+    });
+    
+    emailInput.addEventListener('blur', validateEmailField);
+  }
+
+  // Password rules toggle
+  const passwordInfoBtn = document.getElementById('password-info-btn');
+  let rulesBoxVisible = false;
+  
+  function togglePasswordRules() {
+    if (!pwRulesBox) return;
+    rulesBoxVisible = !rulesBoxVisible;
+    pwRulesBox.style.display = rulesBoxVisible ? 'block' : 'none';
+    if (rulesBoxVisible && pwInput && pwInput.value) {
+      updateRulesUI(pwInput.value || '');
+    }
+  }
+
+  if (passwordInfoBtn) {
+    passwordInfoBtn.addEventListener('click', function(e) {
+      e.preventDefault();
+      togglePasswordRules();
+    });
+  }
+
+  // password rule checker
+  function checkPasswordRules(pw) {
+    return {
+      length: pw.length >= 8,
+      upper: /[A-Z]/.test(pw),
+      lower: /[a-z]/.test(pw),
+      number: /[0-9]/.test(pw)
+    };
+  }
+
+  function updateRulesUI(pw) {
+    const checks = checkPasswordRules(pw);
+    updateRule('length', checks.length);
+    updateRule('upper',  checks.upper);
+    updateRule('lower',  checks.lower);
+    updateRule('number', checks.number);
+    return checks;
+  }
+
+  function updateRule(key, ok) {
+    const r = rules[key];
+    if (!r || !r.el) return;
+    r.el.classList.toggle('valid', ok);
+    r.el.classList.toggle('invalid', !ok);
+    r.el.textContent = (ok ? '✔ ' : '✖ ') + r.text;
+  }
+
+  // validate password field
+  function validatePasswordField() {
+    const pw = pwInput.value || '';
+    const checks = updateRulesUI(pw);
+    if (!checks.length || !checks.upper || !checks.lower || !checks.number) {
+      markInvalid(pwInput, 'Password does not satisfy all requirements.');
+      return false;
+    }
+    markValid(pwInput);
+    return true;
+  }
+
+  // validate confirm password
+  function validateConfirmPasswordField() {
+    const pw = pwInput.value || '';
+    const pw2 = pw2Input.value || '';
+    if (!pw2) { markInvalid(pw2Input, 'Please confirm your password.'); return false; }
+    if (pw !== pw2) { markInvalid(pw2Input, 'Passwords do not match.'); return false; }
+    markValid(pw2Input); return true;
+  }
+
+  // Wire password input events
+  if (pwInput) {
+    pwInput.addEventListener('input', () => {
+      if (rulesBoxVisible) {
+        updateRulesUI(pwInput.value || '');
+      }
+      if (pwInput.value.length) {
+        validatePasswordField();
+      } else {
+        clearValidation(pwInput);
+      }
+      if (pw2Input && pw2Input.value.length) {
+        validateConfirmPasswordField();
+      }
+    });
+    pwInput.addEventListener('blur', () => {
+      validatePasswordField();
+    });
+  }
+
+  if (pw2Input) {
+    pw2Input.addEventListener('input', validateConfirmPasswordField);
+    pw2Input.addEventListener('blur', validateConfirmPasswordField);
+  }
+
+  // Form submit validation
+  const form = document.getElementById('servicerRegisterForm');
+  if (form) {
+    form.addEventListener('submit', function (e) {
+      let ok = true;
+      ok = validateEmailField() && ok;
+      ok = validatePhoneField() && ok;
+      ok = validatePasswordField() && ok;
+      ok = validateConfirmPasswordField() && ok;
+      if (!ok) {
+        e.preventDefault();
+        const firstInvalid = document.querySelector('.is-invalid');
+        if (firstInvalid) firstInvalid.focus();
+      }
+    });
+  }
+});
+</script>
+
+</body>
+</html>

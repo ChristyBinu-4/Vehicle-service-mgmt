@@ -67,6 +67,32 @@ class User(AbstractUser):
         null=True,
         verbose_name='pincode'
     )
+    
+    # Servicer-specific fields (nullable, optional)
+    location = models.CharField(
+        max_length=100,
+        blank=True,
+        null=True,
+        verbose_name='location',
+        help_text='Service center location'
+    )
+    
+    work_types = models.CharField(
+        max_length=200,
+        blank=True,
+        null=True,
+        verbose_name='work types',
+        help_text='Types of work the servicer can do (comma-separated)'
+    )
+    
+    available_time = models.CharField(
+        max_length=100,
+        blank=True,
+        null=True,
+        verbose_name='available time',
+        help_text='Available working hours',
+        default='9:00 AM - 6:00 PM'
+    )
 
     def __str__(self):
         return self.username
@@ -124,11 +150,12 @@ class Servicer(models.Model):
 
 class Booking(models.Model):
     STATUS_CHOICES = (
-        ("Requested", "Requested"),
+        ("Requested", "Service Requested"),
         ("Accepted", "Accepted"),
-        ("Rejected", "Rejected"),
+        ("Pending", "Pending"),
         ("Ongoing", "Ongoing"),
         ("Completed", "Completed"),
+        ("Rejected", "Rejected"),
     )
 
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
@@ -149,6 +176,18 @@ class Booking(models.Model):
 
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="Requested")
     created_at = models.DateTimeField(auto_now_add=True)
+    
+    # Additional fields for work lifecycle
+    rejection_reason = models.TextField(blank=True, null=True, help_text="Reason for rejecting the service request")
+    pickup_choice = models.CharField(
+        max_length=20,
+        choices=[("pickup", "Servicer will pickup"), ("user_brings", "User will bring vehicle")],
+        blank=True,
+        null=True
+    )
+    payment_requested = models.BooleanField(default=False)
+    final_amount = models.DecimalField(max_digits=10, decimal_places=2, blank=True, null=True)
+    completion_notes = models.TextField(blank=True, null=True)
 
     def __str__(self):
         return f"{self.vehicle_number} - {self.servicer.name}"
@@ -161,8 +200,18 @@ class Diagnosis(models.Model):
         related_name="diagnosis"
     )
     report = models.TextField()
-    estimated_cost = models.DecimalField(max_digits=10, decimal_places=2)
+    work_items = models.TextField(blank=True, null=True, help_text="Comma-separated list of work items")
+    estimated_cost = models.DecimalField(max_digits=10, decimal_places=2, blank=True, null=True)
+    estimated_completion_time = models.CharField(max_length=100, blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
+    user_approved = models.BooleanField(default=False)
+    user_rejected = models.BooleanField(default=False)
 
     def __str__(self):
         return f"Diagnosis for Booking #{self.booking.id}"
+    
+    def get_work_items_list(self):
+        """Return work items as a list."""
+        if self.work_items:
+            return [item.strip() for item in self.work_items.split(",") if item.strip()]
+        return []

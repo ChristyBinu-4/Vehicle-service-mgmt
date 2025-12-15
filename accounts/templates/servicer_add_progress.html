@@ -1,0 +1,42 @@
+{% extends "servicer_sidebar.html" %}
+{% block content %}
+
+<div class="container-fluid">
+    <h2 class="fw-bold mb-4">Add Progress Update - Booking #{{ booking.id }}</h2>
+
+    <div class="card">
+        <div class="card-body">
+            <h5 class="card-title mb-3">Progress Update</h5>
+            <form method="POST">
+                {% csrf_token %}
+                <div class="mb-3">
+                    <label for="id_title" class="form-label fw-semibold">Title <span class="text-danger">*</span></label>
+                    {{ form.title }}
+                    {% if form.title.errors %}
+                        <div class="text-danger">{{ form.title.errors }}</div>
+                    {% endif %}
+                </div>
+                <div class="mb-3">
+                    <label for="id_description" class="form-label fw-semibold">Description <span class="text-danger">*</span></label>
+                    {{ form.description }}
+                    {% if form.description.errors %}
+                        <div class="text-danger">{{ form.description.errors }}</div>
+                    {% endif %}
+                </div>
+                <div class="mb-3">
+                    <label for="id_status" class="form-label fw-semibold">Status <span class="text-danger">*</span></label>
+                    {{ form.status }}
+                    {% if form.status.errors %}
+                        <div class="text-danger">{{ form.status.errors }}</div>
+                    {% endif %}
+                </div>
+                <div class="d-flex gap-2">
+                    <button type="submit" class="btn btn-primary">Add Progress Update</button>
+                    <a href="{% url 'servicer_booking_detail' booking.id %}" class="btn btn-secondary">Cancel</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+{% endblock %}

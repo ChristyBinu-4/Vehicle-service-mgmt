@@ -1,0 +1,80 @@
+{% extends "servicer_sidebar.html" %}
+{% block content %}
+
+<div class="container-fluid">
+    <h2 class="fw-bold mb-4">Create Diagnosis - Booking #{{ booking.id }}</h2>
+
+    <div class="row">
+        <!-- Left Side: Vehicle Info and Complaints -->
+        <div class="col-md-5">
+            <div class="card mb-3">
+                <div class="card-body">
+                    <h5 class="card-title">Vehicle Information</h5>
+                    <p><strong>Make & Model:</strong> {{ booking.vehicle_make }} {{ booking.vehicle_model }}</p>
+                    <p><strong>Vehicle Number:</strong> {{ booking.vehicle_number }}</p>
+                    <p><strong>Year:</strong> {{ booking.year }}</p>
+                    <p><strong>Fuel Type:</strong> {{ booking.fuel_type }}</p>
+                </div>
+            </div>
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Customer Complaints</h5>
+                    <ul>
+                        {% for complaint in complaint_list %}
+                        <li>{{ complaint }}</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Side: Diagnosis Form -->
+        <div class="col-md-7">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title mb-3">Diagnosis Details</h5>
+                    <form method="POST">
+                        {% csrf_token %}
+                        <div class="mb-3">
+                            <label for="id_report" class="form-label fw-semibold">Diagnosis Report <span class="text-danger">*</span></label>
+                            {{ form.report }}
+                            {% if form.report.errors %}
+                                <div class="text-danger">{{ form.report.errors }}</div>
+                            {% endif %}
+                        </div>
+                        <div class="mb-3">
+                            <label for="id_work_items" class="form-label fw-semibold">Work Items <span class="text-danger">*</span></label>
+                            {{ form.work_items }}
+                            <small class="form-text text-muted">{{ form.work_items.help_text }}</small>
+                            {% if form.work_items.errors %}
+                                <div class="text-danger">{{ form.work_items.errors }}</div>
+                            {% endif %}
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="id_estimated_cost" class="form-label fw-semibold">Estimated Cost (₹)</label>
+                                {{ form.estimated_cost }}
+                                {% if form.estimated_cost.errors %}
+                                    <div class="text-danger">{{ form.estimated_cost.errors }}</div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="id_estimated_completion_time" class="form-label fw-semibold">Estimated Completion Time</label>
+                                {{ form.estimated_completion_time }}
+                                {% if form.estimated_completion_time.errors %}
+                                    <div class="text-danger">{{ form.estimated_completion_time.errors }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="d-flex gap-2">
+                            <button type="submit" class="btn btn-primary">Send Diagnosis</button>
+                            <a href="{% url 'servicer_booking_detail' booking.id %}" class="btn btn-secondary">Cancel</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}

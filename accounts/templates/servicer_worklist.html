@@ -1,0 +1,112 @@
+{% extends "servicer_sidebar.html" %}
+{% block content %}
+
+<style>
+    .work-item-card {
+        background: #fff;
+        border-radius: 8px;
+        padding: 16px;
+        margin-bottom: 12px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+    .work-item-card:hover {
+        box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+        transform: translateY(-2px);
+    }
+    .status-badge {
+        display: inline-block;
+        padding: 4px 12px;
+        border-radius: 12px;
+        font-size: 0.875rem;
+        font-weight: 500;
+    }
+    .status-requested { background: #fef3c7; color: #92400e; }
+    .status-accepted { background: #dbeafe; color: #1e40af; }
+    .status-pending { background: #fce7f3; color: #9f1239; }
+    .status-ongoing { background: #d1fae5; color: #065f46; }
+    .status-completed { background: #dcfce7; color: #166534; }
+    .tab-content {
+        min-height: 400px;
+    }
+</style>
+
+<div class="container-fluid">
+    <h2 class="fw-bold mb-4">Worklist</h2>
+
+    <!-- Tabs -->
+    <ul class="nav nav-tabs mb-4" id="worklistTabs" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link {% if active_tab == 'requested' %}active{% endif %}" 
+                    id="requested-tab" 
+                    onclick="window.location.href='{% url 'servicer_worklist' %}?tab=requested'"
+                    type="button">
+                Service Requested
+                <span class="badge bg-secondary ms-2">{{ bookings|length }}</span>
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link {% if active_tab == 'pending' %}active{% endif %}" 
+                    id="pending-tab"
+                    onclick="window.location.href='{% url 'servicer_worklist' %}?tab=pending'"
+                    type="button">
+                Pending
+                <span class="badge bg-secondary ms-2">{{ bookings|length }}</span>
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link {% if active_tab == 'ongoing' %}active{% endif %}" 
+                    id="ongoing-tab"
+                    onclick="window.location.href='{% url 'servicer_worklist' %}?tab=ongoing'"
+                    type="button">
+                Ongoing
+                <span class="badge bg-secondary ms-2">{{ bookings|length }}</span>
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link {% if active_tab == 'completed' %}active{% endif %}" 
+                    id="completed-tab"
+                    onclick="window.location.href='{% url 'servicer_worklist' %}?tab=completed'"
+                    type="button">
+                Completed
+                <span class="badge bg-secondary ms-2">{{ bookings|length }}</span>
+            </button>
+        </li>
+    </ul>
+
+    <!-- Tab Content -->
+    <div class="tab-content" id="worklistTabContent">
+        <div class="tab-pane fade show active">
+            {% if bookings %}
+                {% for booking in bookings %}
+                <div class="work-item-card" onclick="window.location.href='{% url 'servicer_booking_detail' booking.id %}'">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div class="flex-grow-1">
+                            <div class="d-flex align-items-center gap-2 mb-2">
+                                <h5 class="mb-0">Request #{{ booking.id }}</h5>
+                                <span class="status-badge status-{{ booking.status|lower }}">
+                                    {{ booking.get_status_display }}
+                                </span>
+                            </div>
+                            <p class="text-muted mb-1"><strong>User:</strong> {{ booking.user.username }}</p>
+                            <p class="text-muted mb-1"><strong>Vehicle:</strong> {{ booking.vehicle_make }} {{ booking.vehicle_model }} ({{ booking.vehicle_number }})</p>
+                            <p class="text-muted mb-1"><strong>Work Type:</strong> {{ booking.work_type }}</p>
+                            <p class="text-muted mb-0"><strong>Date:</strong> {{ booking.created_at|date:"M d, Y" }}</p>
+                        </div>
+                        <div>
+                            <span class="material-symbols-outlined text-muted">chevron_right</span>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            {% else %}
+                <div class="text-center py-5">
+                    <p class="text-muted">No bookings found in this category.</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+{% endblock %}

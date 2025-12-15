@@ -1,0 +1,46 @@
+{% extends "admin_sidebar.html" %}
+{% block content %}
+
+<main class="flex-grow-1 p-4">
+
+    <header class="mb-4">
+        <h2 class="fw-bold">List of Customers</h2>
+    </header>
+
+    <!-- Customers List -->
+    <div class="bg-white p-4 rounded shadow-sm">
+        <h5 class="fw-semibold mb-3">All Customers</h5>
+        
+        {% if customers %}
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Username</th>
+                            <th>Name</th>
+                            <th>Email</th>
+                            <th>Phone</th>
+                            <th>Date Joined</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for customer in customers %}
+                        <tr>
+                            <td>{{ customer.username }}</td>
+                            <td>{{ customer.first_name }} {{ customer.last_name }}</td>
+                            <td>{{ customer.email }}</td>
+                            <td>{{ customer.phone }}</td>
+                            <td>{{ customer.date_joined|date:"M d, Y" }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <p class="text-muted">No customers found.</p>
+        {% endif %}
+    </div>
+
+</main>
+
+{% endblock %}

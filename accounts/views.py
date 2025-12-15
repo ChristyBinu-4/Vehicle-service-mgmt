@@ -7,8 +7,12 @@ from django.urls import reverse
 from django.http import HttpResponseRedirect
 from functools import wraps
 
-from .forms import UserRegisterForm, FeedbackForm, ProfileUpdateForm, PasswordChangeForm
-from .models import Feedback, WorkProgress, Servicer, Booking
+from .forms import (
+    UserRegisterForm, FeedbackForm, ProfileUpdateForm, PasswordChangeForm, 
+    ServicerRegisterForm, ServicerProfileUpdateForm, RejectBookingForm, 
+    AcceptBookingForm, DiagnosisForm, ProgressUpdateForm, CompleteWorkForm
+)
+from .models import Feedback, WorkProgress, Servicer, Booking, Diagnosis
 
 
 def user_role_required(view_func):
@@ -25,6 +29,52 @@ def user_role_required(view_func):
             # User is logged in but not a USER role
             logout(request)
             return HttpResponseRedirect(reverse("login_page") + "?error=invalid_role")
+        
+        return view_func(request, *args, **kwargs)
+    return wrapper
+
+
+def servicer_role_required(view_func):
+    """
+    Decorator to ensure only users with SERVICER role can access the view.
+    Must be used after @login_required decorator.
+    """
+    @wraps(view_func)
+    def wrapper(request, *args, **kwargs):
+        if not request.user.is_authenticated:
+            return redirect('servicer_login')
+        
+        if request.user.role != 'SERVICER':
+            # User is logged in but not a SERVICER role
+            logout(request)
+            if request.user.role == 'USER':
+                return HttpResponseRedirect(reverse("login_page") + "?error=invalid_role")
+            else:
+                return HttpResponseRedirect(reverse("servicer_login") + "?error=invalid_role")
+        
+        return view_func(request, *args, **kwargs)
+    return wrapper
+
+
+def admin_role_required(view_func):
+    """
+    Decorator to ensure only users with ADMIN role can access the view.
+    Must be used after @login_required decorator.
+    """
+    @wraps(view_func)
+    def wrapper(request, *args, **kwargs):
+        if not request.user.is_authenticated:
+            return redirect('admin_login')
+        
+        if request.user.role != 'ADMIN':
+            # User is logged in but not an ADMIN role
+            logout(request)
+            if request.user.role == 'USER':
+                return HttpResponseRedirect(reverse("login_page") + "?error=invalid_role")
+            elif request.user.role == 'SERVICER':
+                return HttpResponseRedirect(reverse("servicer_login") + "?error=invalid_role")
+            else:
+                return HttpResponseRedirect(reverse("admin_login") + "?error=invalid_role")
         
         return view_func(request, *args, **kwargs)
     return wrapper
@@ -238,7 +288,9 @@ def user_profile(request):
         if 'update_profile' in request.POST:
             profile_form = ProfileUpdateForm(request.POST, instance=user, user=user)
             if profile_form.is_valid():
-                profile_form.save()
+                saved_user = profile_form.save()
+                # Refresh user object from database to get updated data
+                user.refresh_from_db()
                 profile_success = True
                 # Re-instantiate form with updated data
                 profile_form = ProfileUpdateForm(instance=user, user=user)
@@ -366,3 +418,583 @@ def user_logout(request):
     
     # Redirect to login page
     return redirect('login_page')
+
+
+# ==================== SERVICER AUTHENTICATION ====================
+
+def servicer_login(request):
+    """
+    Handle servicer login functionality.
+    - Only allows SERVICER role to log in
+    - Validates credentials using Django authentication
+    - Checks if account is active
+    - Redirects to servicer home on success
+    - Shows error messages for invalid credentials or inactive accounts
+    """
+    # If servicer is already logged in, redirect to home
+    if request.user.is_authenticated:
+        # Check if user has SERVICER role, if not, logout and show error
+        if request.user.role == 'SERVICER':
+            return redirect("servicer_home")
+        else:
+            # User is logged in but not a SERVICER role, logout them
+            logout(request)
+    
+    if request.method == "POST":
+        username = request.POST.get("username", "").strip()
+        password = request.POST.get("password", "").strip()
+        
+        # Validate empty fields
+        if not username:
+            return HttpResponseRedirect(reverse("servicer_login") + "?error=empty_username")
+        if not password:
+            return HttpResponseRedirect(reverse("servicer_login") + "?error=empty_password")
+        
+        # Authenticate user
+        user = authenticate(request, username=username, password=password)
+        
+        if user is not None:
+            # Check if account is active
+            if not user.is_active:
+                return HttpResponseRedirect(reverse("servicer_login") + "?error=inactive")
+            
+            # Check if user has SERVICER role
+            if user.role != 'SERVICER':
+                return HttpResponseRedirect(reverse("servicer_login") + "?error=invalid_role")
+            
+            # Login successful - create session
+            login(request, user)
+            return redirect("servicer_home")
+        else:
+            # Invalid credentials
+            return HttpResponseRedirect(reverse("servicer_login") + "?error=invalid")
+
+    return render(request, "accounts/servicer_login.html")
+
+
+def servicer_register(request):
+    """
+    Handle servicer registration with comprehensive validation.
+    - Validates all fields according to requirements
+    - Shows specific error messages for each validation failure
+    - Only saves servicer if all validations pass
+    - Password is automatically hashed by Django
+    - Automatically assigns SERVICER role
+    - Redirects to servicer login page on success
+    """
+    if request.method == "POST":
+        form = ServicerRegisterForm(request.POST)
+        if form.is_valid():
+            try:
+                # Save servicer (password is automatically hashed by UserCreationForm)
+                user = form.save()
+                
+                # Verify servicer was created successfully
+                if user and user.pk:
+                    # Redirect to servicer login page with success parameter
+                    return HttpResponseRedirect(reverse("servicer_login") + "?registered=success")
+                else:
+                    return HttpResponseRedirect(reverse("servicer_register") + "?error=failed")
+            except Exception as e:
+                # Log the error for debugging
+                import logging
+                logger = logging.getLogger(__name__)
+                logger.error(f"Servicer registration error: {str(e)}")
+                return HttpResponseRedirect(reverse("servicer_register") + "?error=exception")
+        else:
+            # Form has validation errors - render with form errors
+            pass
+    else:
+        # GET request - show empty form
+        form = ServicerRegisterForm()
+
+    return render(request, "accounts/servicer_register.html", {"form": form})
+
+
+@login_required
+@servicer_role_required
+def servicer_home(request):
+    """
+    Servicer dashboard/home page (placeholder).
+    - Only accessible to logged-in servicers
+    - Shows basic dashboard layout with sidebar
+    """
+    servicer_name = request.user.first_name or request.user.username
+    
+    return render(request, "servicer_home.html", {
+        "servicer_name": servicer_name,
+    })
+
+
+def servicer_logout(request):
+    """
+    Handle servicer logout functionality.
+    - Logs out the current servicer
+    - Clears session data
+    - Redirects to servicer login page
+    """
+    if request.user.is_authenticated:
+        # Logout the servicer (clears authentication)
+        logout(request)
+        
+        # Clear session data
+        request.session.flush()
+    
+    # Redirect to servicer login page
+    return redirect('servicer_login')
+
+
+@login_required
+@servicer_role_required
+def servicer_worklist(request):
+    """
+    Servicer worklist page with tabs for different work states.
+    Shows bookings filtered by status: Requested, Pending, Ongoing, Completed
+    """
+    # Get servicer associated with logged-in user (match by email)
+    try:
+        servicer = Servicer.objects.get(email=request.user.email)
+    except Servicer.DoesNotExist:
+        # If no servicer found, create one or show error
+        messages.error(request, "Servicer profile not found. Please contact support.")
+        return redirect("servicer_home")
+    
+    # Get tab parameter (default to 'requested')
+    tab = request.GET.get('tab', 'requested')
+    
+    # Filter bookings by status
+    if tab == 'requested':
+        bookings = Booking.objects.filter(servicer=servicer, status='Requested').order_by('-created_at')
+    elif tab == 'pending':
+        bookings = Booking.objects.filter(servicer=servicer, status='Pending').order_by('-created_at')
+    elif tab == 'ongoing':
+        bookings = Booking.objects.filter(servicer=servicer, status='Ongoing').order_by('-created_at')
+    elif tab == 'completed':
+        bookings = Booking.objects.filter(servicer=servicer, status='Completed').order_by('-created_at')
+    else:
+        bookings = Booking.objects.filter(servicer=servicer, status='Requested').order_by('-created_at')
+        tab = 'requested'
+    
+    return render(request, "servicer_worklist.html", {
+        'bookings': bookings,
+        'active_tab': tab,
+        'servicer': servicer,
+    })
+
+
+@login_required
+@servicer_role_required
+def servicer_booking_detail(request, booking_id):
+    """
+    Show detailed view of a booking for servicer.
+    Different views based on booking status.
+    """
+    # Get servicer associated with logged-in user
+    try:
+        servicer = Servicer.objects.get(email=request.user.email)
+    except Servicer.DoesNotExist:
+        messages.error(request, "Servicer profile not found.")
+        return redirect("servicer_worklist")
+    
+    booking = get_object_or_404(Booking, id=booking_id, servicer=servicer)
+    
+    # Get complaint list
+    complaint_list = booking.complaints.split(" || ") if booking.complaints else []
+    
+    # Get diagnosis if exists
+    diagnosis = None
+    if hasattr(booking, 'diagnosis'):
+        diagnosis = booking.diagnosis
+    
+    # Get progress updates if exists
+    progress_updates = WorkProgress.objects.filter(booking=booking).order_by('updated_at')
+    
+    context = {
+        'booking': booking,
+        'complaint_list': complaint_list,
+        'diagnosis': diagnosis,
+        'progress_updates': progress_updates,
+    }
+    
+    return render(request, "servicer_booking_detail.html", context)
+
+
+@login_required
+@servicer_role_required
+def accept_booking(request, booking_id):
+    """
+    Accept a booking request.
+    Moves status from Requested to Accepted.
+    Requires pickup choice.
+    """
+    # Get servicer
+    try:
+        servicer = Servicer.objects.get(email=request.user.email)
+    except Servicer.DoesNotExist:
+        messages.error(request, "Servicer profile not found.")
+        return redirect("servicer_worklist")
+    
+    booking = get_object_or_404(Booking, id=booking_id, servicer=servicer, status='Requested')
+    
+    if request.method == "POST":
+        form = AcceptBookingForm(request.POST)
+        if form.is_valid():
+            booking.status = 'Accepted'
+            booking.pickup_choice = form.cleaned_data['pickup_choice']
+            booking.save()
+            messages.success(request, "Booking accepted successfully!")
+            return redirect("servicer_worklist?tab=pending")
+    else:
+        form = AcceptBookingForm()
+    
+    complaint_list = booking.complaints.split(" || ") if booking.complaints else []
+    
+    return render(request, "servicer_accept_booking.html", {
+        'booking': booking,
+        'form': form,
+        'complaint_list': complaint_list,
+    })
+
+
+@login_required
+@servicer_role_required
+def reject_booking(request, booking_id):
+    """
+    Reject a booking request with a reason.
+    Moves status to Rejected and stores reason.
+    """
+    # Get servicer
+    try:
+        servicer = Servicer.objects.get(email=request.user.email)
+    except Servicer.DoesNotExist:
+        messages.error(request, "Servicer profile not found.")
+        return redirect("servicer_worklist")
+    
+    booking = get_object_or_404(Booking, id=booking_id, servicer=servicer, status='Requested')
+    
+    if request.method == "POST":
+        form = RejectBookingForm(request.POST)
+        if form.is_valid():
+            booking.status = 'Rejected'
+            booking.rejection_reason = form.cleaned_data['reason']
+            booking.save()
+            messages.success(request, "Booking rejected.")
+            return redirect("servicer_worklist?tab=requested")
+    else:
+        form = RejectBookingForm()
+    
+    complaint_list = booking.complaints.split(" || ") if booking.complaints else []
+    
+    return render(request, "servicer_reject_booking.html", {
+        'booking': booking,
+        'form': form,
+        'complaint_list': complaint_list,
+    })
+
+
+@login_required
+@servicer_role_required
+def create_diagnosis(request, booking_id):
+    """
+    Create diagnosis for a booking.
+    Moves status from Accepted to Pending.
+    """
+    # Get servicer
+    try:
+        servicer = Servicer.objects.get(email=request.user.email)
+    except Servicer.DoesNotExist:
+        messages.error(request, "Servicer profile not found.")
+        return redirect("servicer_worklist")
+    
+    booking = get_object_or_404(Booking, id=booking_id, servicer=servicer, status='Accepted')
+    
+    if request.method == "POST":
+        form = DiagnosisForm(request.POST)
+        if form.is_valid():
+            # Create diagnosis
+            diagnosis = form.save(commit=False)
+            diagnosis.booking = booking
+            diagnosis.save()
+            
+            # Update booking status to Pending
+            booking.status = 'Pending'
+            booking.save()
+            
+            messages.success(request, "Diagnosis submitted successfully!")
+            return redirect("servicer_worklist?tab=pending")
+    else:
+        form = DiagnosisForm()
+    
+    complaint_list = booking.complaints.split(" || ") if booking.complaints else []
+    
+    return render(request, "servicer_create_diagnosis.html", {
+        'booking': booking,
+        'form': form,
+        'complaint_list': complaint_list,
+    })
+
+
+@login_required
+@servicer_role_required
+def add_progress_update(request, booking_id):
+    """
+    Add a progress update for ongoing work.
+    """
+    # Get servicer
+    try:
+        servicer = Servicer.objects.get(email=request.user.email)
+    except Servicer.DoesNotExist:
+        messages.error(request, "Servicer profile not found.")
+        return redirect("servicer_worklist")
+    
+    booking = get_object_or_404(Booking, id=booking_id, servicer=servicer, status='Ongoing')
+    
+    if request.method == "POST":
+        form = ProgressUpdateForm(request.POST)
+        if form.is_valid():
+            progress = form.save(commit=False)
+            progress.booking = booking
+            progress.save()
+            messages.success(request, "Progress update added successfully!")
+            return redirect("servicer_booking_detail", booking_id=booking_id)
+    else:
+        form = ProgressUpdateForm()
+    
+    return render(request, "servicer_add_progress.html", {
+        'booking': booking,
+        'form': form,
+    })
+
+
+@login_required
+@servicer_role_required
+def mark_work_completed(request, booking_id):
+    """
+    Mark work as completed and request payment.
+    Moves status from Ongoing to Completed.
+    """
+    # Get servicer
+    try:
+        servicer = Servicer.objects.get(email=request.user.email)
+    except Servicer.DoesNotExist:
+        messages.error(request, "Servicer profile not found.")
+        return redirect("servicer_worklist")
+    
+    booking = get_object_or_404(Booking, id=booking_id, servicer=servicer, status='Ongoing')
+    
+    if request.method == "POST":
+        form = CompleteWorkForm(request.POST)
+        if form.is_valid():
+            booking.status = 'Completed'
+            booking.completion_notes = form.cleaned_data.get('completion_notes', '')
+            booking.final_amount = form.cleaned_data['final_amount']
+            booking.save()
+            messages.success(request, "Work marked as completed!")
+            return redirect("servicer_worklist?tab=completed")
+    else:
+        form = CompleteWorkForm()
+    
+    return render(request, "servicer_complete_work.html", {
+        'booking': booking,
+        'form': form,
+    })
+
+
+@login_required
+@servicer_role_required
+def request_payment(request, booking_id):
+    """
+    Request payment for completed work.
+    Sets payment_requested flag.
+    """
+    # Get servicer
+    try:
+        servicer = Servicer.objects.get(email=request.user.email)
+    except Servicer.DoesNotExist:
+        messages.error(request, "Servicer profile not found.")
+        return redirect("servicer_worklist")
+    
+    booking = get_object_or_404(Booking, id=booking_id, servicer=servicer, status='Completed')
+    
+    if request.method == "POST":
+        booking.payment_requested = True
+        booking.save()
+        messages.success(request, "Payment request sent to user!")
+        return redirect("servicer_booking_detail", booking_id=booking_id)
+    
+    return redirect("servicer_booking_detail", booking_id=booking_id)
+
+
+@login_required
+@servicer_role_required
+def servicer_profile(request):
+    """
+    Handle servicer profile viewing and editing.
+    - Display servicer profile information
+    - Allow editing of personal info and servicer-specific fields
+    - Handle password change
+    """
+    user = request.user
+    profile_form = ServicerProfileUpdateForm(instance=user, user=user)
+    password_form = PasswordChangeForm(user=user)
+    profile_success = False
+    password_success = False
+    
+    if request.method == "POST":
+        # Check which form was submitted
+        if 'update_profile' in request.POST:
+            profile_form = ServicerProfileUpdateForm(request.POST, instance=user, user=user)
+            if profile_form.is_valid():
+                saved_user = profile_form.save()
+                # Refresh user object from database to get updated data
+                user.refresh_from_db()
+                profile_success = True
+                # Re-instantiate form with updated data
+                profile_form = ServicerProfileUpdateForm(instance=user, user=user)
+        
+        elif 'change_password' in request.POST:
+            password_form = PasswordChangeForm(request.POST, user=user)
+            if password_form.is_valid():
+                password_form.save()
+                password_success = True
+                # Re-instantiate form
+                password_form = PasswordChangeForm(user=user)
+                # Update session to keep user logged in after password change
+                update_session_auth_hash(request, user)
+    
+    return render(request, "servicer_profile.html", {
+        'user': user,
+        'profile_form': profile_form,
+        'password_form': password_form,
+        'profile_success': profile_success,
+        'password_success': password_success,
+    })
+
+
+# ==================== ADMIN AUTHENTICATION ====================
+
+def admin_login(request):
+    """
+    Handle admin login functionality.
+    - Only allows ADMIN role to log in
+    - Validates credentials using Django authentication
+    - Checks if account is active
+    - Redirects to admin home on success
+    - Shows error messages for invalid credentials or inactive accounts
+    - NO registration option (admins must be created manually)
+    """
+    # If admin is already logged in, redirect to home
+    if request.user.is_authenticated:
+        # Check if user has ADMIN role, if not, logout and show error
+        if request.user.role == 'ADMIN':
+            return redirect("admin_home")
+        else:
+            # User is logged in but not an ADMIN role, logout them
+            logout(request)
+    
+    if request.method == "POST":
+        username = request.POST.get("username", "").strip()
+        password = request.POST.get("password", "").strip()
+        
+        # Validate empty fields
+        if not username:
+            return HttpResponseRedirect(reverse("admin_login") + "?error=empty_username")
+        if not password:
+            return HttpResponseRedirect(reverse("admin_login") + "?error=empty_password")
+        
+        # Authenticate user
+        user = authenticate(request, username=username, password=password)
+        
+        if user is not None:
+            # Check if account is active
+            if not user.is_active:
+                return HttpResponseRedirect(reverse("admin_login") + "?error=inactive")
+            
+            # Check if user has ADMIN role
+            if user.role != 'ADMIN':
+                return HttpResponseRedirect(reverse("admin_login") + "?error=invalid_role")
+            
+            # Login successful - create session
+            login(request, user)
+            return redirect("admin_home")
+        else:
+            # Invalid credentials
+            return HttpResponseRedirect(reverse("admin_login") + "?error=invalid")
+
+    return render(request, "accounts/admin_login.html")
+
+
+@login_required
+@admin_role_required
+def admin_home(request):
+    """
+    Admin dashboard/home page (placeholder).
+    - Only accessible to logged-in admins
+    - Shows basic dashboard layout with sidebar
+    - Placeholder for analytics, latest status, and feedback view
+    """
+    admin_name = request.user.username
+    
+    return render(request, "admin_home.html", {
+        "admin_name": admin_name,
+    })
+
+
+@login_required
+@admin_role_required
+def admin_customers(request):
+    """
+    Admin page to list all customers (users with role=USER).
+    Placeholder implementation.
+    """
+    from .models import User
+    customers = User.objects.filter(role='USER')
+    
+    return render(request, "admin_customers.html", {
+        "customers": customers,
+    })
+
+
+@login_required
+@admin_role_required
+def admin_servicers(request):
+    """
+    Admin page to list all servicers (users with role=SERVICER).
+    Placeholder implementation.
+    """
+    from .models import User
+    servicers = User.objects.filter(role='SERVICER')
+    
+    return render(request, "admin_servicers.html", {
+        "servicers": servicers,
+    })
+
+
+@login_required
+@admin_role_required
+def admin_settings(request):
+    """
+    Admin settings page (placeholder).
+    - Change landing page image (UI only)
+    - Add admin users (UI only)
+    - No functionality implemented yet
+    """
+    return render(request, "admin_settings.html")
+
+
+def admin_logout(request):
+    """
+    Handle admin logout functionality.
+    - Logs out the current admin
+    - Clears session data
+    - Redirects to admin login page
+    """
+    if request.user.is_authenticated:
+        # Logout the admin (clears authentication)
+        logout(request)
+        
+        # Clear session data
+        request.session.flush()
+    
+    # Redirect to admin login page
+    return redirect('admin_login')

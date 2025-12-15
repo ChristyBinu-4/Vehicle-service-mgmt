@@ -1,0 +1,48 @@
+{% extends "admin_sidebar.html" %}
+{% block content %}
+
+<main class="flex-grow-1 p-4">
+
+    <header class="mb-4">
+        <h2 class="fw-bold">List of Servicers</h2>
+    </header>
+
+    <!-- Servicers List -->
+    <div class="bg-white p-4 rounded shadow-sm">
+        <h5 class="fw-semibold mb-3">All Servicers</h5>
+        
+        {% if servicers %}
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Username</th>
+                            <th>Owner Name</th>
+                            <th>Service Center</th>
+                            <th>Email</th>
+                            <th>Phone</th>
+                            <th>Date Joined</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for servicer in servicers %}
+                        <tr>
+                            <td>{{ servicer.username }}</td>
+                            <td>{{ servicer.first_name }}</td>
+                            <td>{{ servicer.last_name }}</td>
+                            <td>{{ servicer.email }}</td>
+                            <td>{{ servicer.phone }}</td>
+                            <td>{{ servicer.date_joined|date:"M d, Y" }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <p class="text-muted">No servicers found.</p>
+        {% endif %}
+    </div>
+
+</main>
+
+{% endblock %}

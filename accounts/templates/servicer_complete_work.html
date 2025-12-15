@@ -1,0 +1,38 @@
+{% extends "servicer_sidebar.html" %}
+{% block content %}
+
+<div class="container-fluid">
+    <h2 class="fw-bold mb-4">Mark Work as Completed - Booking #{{ booking.id }}</h2>
+
+    <div class="card">
+        <div class="card-body">
+            <h5 class="card-title mb-3">Complete Work</h5>
+            <form method="POST">
+                {% csrf_token %}
+                <div class="mb-3">
+                    <label for="id_final_amount" class="form-label fw-semibold">Final Amount (₹) <span class="text-danger">*</span></label>
+                    {{ form.final_amount }}
+                    {% if form.final_amount.errors %}
+                        <div class="text-danger">{{ form.final_amount.errors }}</div>
+                    {% endif %}
+                </div>
+                <div class="mb-3">
+                    <label for="id_completion_notes" class="form-label fw-semibold">Completion Notes (Optional)</label>
+                    {{ form.completion_notes }}
+                    {% if form.completion_notes.errors %}
+                        <div class="text-danger">{{ form.completion_notes.errors }}</div>
+                    {% endif %}
+                </div>
+                <div class="alert alert-info">
+                    <strong>Note:</strong> After marking as completed, you can request payment from the user.
+                </div>
+                <div class="d-flex gap-2">
+                    <button type="submit" class="btn btn-success">Mark as Completed</button>
+                    <a href="{% url 'servicer_booking_detail' booking.id %}" class="btn btn-secondary">Cancel</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+{% endblock %}

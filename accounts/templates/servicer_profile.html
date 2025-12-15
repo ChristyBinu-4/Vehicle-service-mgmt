@@ -1,4 +1,4 @@
-{% extends "user_sidebar.html" %}
+{% extends "servicer_sidebar.html" %}
 {% block content %}
 
 <style>
@@ -185,7 +185,7 @@
             <h4 class="fw-bold mb-0">Personal Information</h4>
             <button type="button" class="btn btn-outline-primary btn-sm" id="editProfileBtn">
                 <span class="material-symbols-outlined" style="font-size: 18px; vertical-align: middle;">edit</span>
-                Edit
+                Edit Profile
             </button>
         </div>
 
@@ -194,7 +194,7 @@
             <input type="hidden" name="update_profile" value="1">
 
             <div class="info-row">
-                <span class="info-label">First Name:</span>
+                <span class="info-label">Owner Name:</span>
                 <span class="info-value">{{ user.first_name|default:"—" }}</span>
                 {{ profile_form.first_name }}
                 {% if profile_form.first_name.errors %}
@@ -207,7 +207,7 @@
             </div>
 
             <div class="info-row">
-                <span class="info-label">Last Name:</span>
+                <span class="info-label">Service Center Name:</span>
                 <span class="info-value">{{ user.last_name|default:"—" }}</span>
                 {{ profile_form.last_name }}
                 {% if profile_form.last_name.errors %}
@@ -291,6 +291,46 @@
                 {% if profile_form.pincode.errors %}
                     <div class="invalid-feedback d-block">
                         {% for error in profile_form.pincode.errors %}
+                            {{ error }}
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            </div>
+
+            <!-- Servicer-specific fields -->
+            <div class="info-row">
+                <span class="info-label">Location:</span>
+                <span class="info-value {% if not user.location %}empty{% endif %}">{{ user.location|default:"Not provided" }}</span>
+                {{ profile_form.location }}
+                {% if profile_form.location.errors %}
+                    <div class="invalid-feedback d-block">
+                        {% for error in profile_form.location.errors %}
+                            {{ error }}
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            </div>
+
+            <div class="info-row">
+                <span class="info-label">Work Types:</span>
+                <span class="info-value {% if not user.work_types %}empty{% endif %}">{{ user.work_types|default:"Not provided" }}</span>
+                {{ profile_form.work_types }}
+                {% if profile_form.work_types.errors %}
+                    <div class="invalid-feedback d-block">
+                        {% for error in profile_form.work_types.errors %}
+                            {{ error }}
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            </div>
+
+            <div class="info-row">
+                <span class="info-label">Available Time:</span>
+                <span class="info-value {% if not user.available_time %}empty{% endif %}">{{ user.available_time|default:"Not provided" }}</span>
+                {{ profile_form.available_time }}
+                {% if profile_form.available_time.errors %}
+                    <div class="invalid-feedback d-block">
+                        {% for error in profile_form.available_time.errors %}
                             {{ error }}
                         {% endfor %}
                     </div>
@@ -413,14 +453,16 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Store original values
         profileForm.querySelectorAll('.form-control').forEach(el => {
-            const valueEl = el.closest('.info-row').querySelector('.info-value');
-            const originalValue = valueEl.textContent.trim();
-            originalValues[el.name] = originalValue === '—' || originalValue === 'Not provided' ? '' : originalValue;
-            
-            // Show form control and set value
-            el.style.display = 'block';
-            if (el.value === '' && originalValues[el.name] !== '') {
-                el.value = originalValues[el.name];
+            if (el.name && el.name !== 'email') { // Skip email field
+                const valueEl = el.closest('.info-row').querySelector('.info-value');
+                const originalValue = valueEl.textContent.trim();
+                originalValues[el.name] = originalValue === '—' || originalValue === 'Not provided' ? '' : originalValue;
+                
+                // Show form control and set value
+                el.style.display = 'block';
+                if (el.value === '' && originalValues[el.name] !== '') {
+                    el.value = originalValues[el.name];
+                }
             }
         });
         
@@ -433,9 +475,11 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Restore original values
         profileForm.querySelectorAll('.form-control').forEach(el => {
-            el.style.display = 'none';
-            if (originalValues.hasOwnProperty(el.name)) {
-                el.value = originalValues[el.name] || '';
+            if (el.name && el.name !== 'email') { // Skip email field
+                el.style.display = 'none';
+                if (originalValues.hasOwnProperty(el.name)) {
+                    el.value = originalValues[el.name] || '';
+                }
             }
         });
         
@@ -469,14 +513,11 @@ document.addEventListener('DOMContentLoaded', function() {
     function showPasswordFields() {
         if (passwordFields) {
             passwordFields.classList.add('active');
-            // Explicitly set display to ensure it shows
             passwordFields.style.display = 'block';
         }
-        // Show password action buttons
         if (passwordActions) {
             passwordActions.style.display = 'flex';
         }
-        // Hide "Change Password" button
         if (changePasswordBtn) {
             changePasswordBtn.style.display = 'none';
         }
@@ -485,28 +526,22 @@ document.addEventListener('DOMContentLoaded', function() {
     function hidePasswordFields() {
         if (passwordFields) {
             passwordFields.classList.remove('active');
-            // Explicitly hide the password fields
             passwordFields.style.display = 'none';
         }
-        // Hide password action buttons
         if (passwordActions) {
             passwordActions.style.display = 'none';
         }
-        // Show "Change Password" button
         if (changePasswordBtn) {
             changePasswordBtn.style.display = 'block';
         }
-        // Clear password fields
         if (passwordForm) {
             passwordForm.querySelectorAll('input[type="password"]').forEach(el => {
                 el.value = '';
                 el.classList.remove('is-valid', 'is-invalid');
             });
-            // Clear error messages
             passwordForm.querySelectorAll('.invalid-feedback').forEach(el => {
                 el.style.display = 'none';
             });
-            // Clear password match validation messages
             if (passwordMatchError) {
                 passwordMatchError.classList.remove('show');
             }
@@ -514,7 +549,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 passwordMatchSuccess.classList.remove('show');
             }
         }
-        // Hide password rules box
         const pwRulesBox = document.getElementById('password-rules-box');
         if (pwRulesBox) {
             pwRulesBox.style.display = 'none';
@@ -610,7 +644,6 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Only validate when BOTH fields have values
         if (!newPassword || !confirmPassword) {
-            // Hide both messages if either field is empty
             if (passwordMatchError) {
                 passwordMatchError.classList.remove('show');
             }
@@ -625,7 +658,6 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Both fields have values, now check if they match
         if (newPassword === confirmPassword) {
-            // Passwords match - show success, hide error
             if (passwordMatchError) {
                 passwordMatchError.classList.remove('show');
             }
@@ -637,7 +669,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 confirmPasswordInput.classList.add('is-valid');
             }
         } else {
-            // Passwords don't match - show error, hide success
             if (passwordMatchError) {
                 passwordMatchError.classList.add('show');
             }
@@ -656,19 +687,16 @@ document.addEventListener('DOMContentLoaded', function() {
             if (rulesBoxVisible) {
                 updateRulesUI(newPasswordInput.value || '');
             }
-            // Check password match when new password changes
             validatePasswordMatch();
         });
     }
 
     if (confirmPasswordInput) {
         confirmPasswordInput.addEventListener('input', function() {
-            // Check password match when confirm password changes
             validatePasswordMatch();
         });
         
         confirmPasswordInput.addEventListener('blur', function() {
-            // Validate on blur as well
             validatePasswordMatch();
         });
     }
