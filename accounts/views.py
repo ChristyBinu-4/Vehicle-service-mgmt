@@ -294,8 +294,106 @@ def booking_detail(request, booking_id):
 
 @login_required
 @user_role_required
+@login_required
+@user_role_required
 def user_payment(request):
-    return render(request, "user_payment.html")
+    """
+    User Payment page.
+    Displays list of pending payment requests for the logged-in user.
+    Shows bookings where:
+    - booking.user == logged-in user
+    - booking.status == "Completed"
+    - booking.payment_status == "Pending"
+    """
+    # Get pending payment requests for the user
+    pending_payments = Booking.objects.filter(
+        user=request.user,
+        status='Completed',
+        payment_status='Pending',
+        payment_requested=True
+    ).order_by('-created_at')
+    
+    return render(request, "user_payment.html", {
+        'pending_payments': pending_payments,
+    })
+
+
+@login_required
+@user_role_required
+def process_payment(request, booking_id):
+    """
+    Process payment for a booking.
+    
+    Preconditions:
+    - User is authenticated (enforced by decorators)
+    - Booking belongs to logged-in user
+    - booking.status == "Completed"
+    - booking.payment_status == "Pending"
+    
+    On confirm:
+    - Update booking.payment_status → "Paid"
+    - Record payment_date timestamp
+    - Redirect to Work History
+    - Show success message
+    """
+    # Validate booking belongs to user
+    booking = get_object_or_404(Booking, id=booking_id, user=request.user)
+    
+    # Precondition: Only allow payment for Completed bookings with Pending payment
+    if booking.status != 'Completed':
+        messages.error(request, f"Cannot process payment. Booking status must be Completed. Current status: {booking.get_status_display()}")
+        return redirect("user_payment")
+    
+    if booking.payment_status != 'Pending':
+        if booking.payment_status == 'Paid':
+            messages.warning(request, "This payment has already been processed.")
+            return redirect("user_work_history")
+        else:
+            messages.error(request, "Payment status is invalid.")
+            return redirect("user_payment")
+    
+    if request.method == "POST":
+        # Double-check status hasn't changed (race condition protection)
+        booking.refresh_from_db()
+        if booking.payment_status != 'Pending':
+            messages.error(request, "Payment status has changed. Cannot process payment.")
+            return redirect("user_payment")
+        
+        # Update payment status to Paid
+        from django.utils import timezone
+        booking.payment_status = "Paid"
+        booking.payment_date = timezone.now()
+        booking.save()
+        
+        messages.success(request, f"Payment of ₹{booking.final_amount} processed successfully!")
+        return redirect("user_work_history")
+    
+    # GET request - show confirmation page
+    return render(request, "payment_confirmation.html", {
+        'booking': booking,
+    })
+
+
+@login_required
+@user_role_required
+def user_work_history(request):
+    """
+    User Work History page.
+    Shows completed bookings where:
+    - booking.user == logged-in user
+    - booking.status == "Completed"
+    - booking.payment_status == "Paid"
+    """
+    # Get completed and paid bookings for the user
+    completed_bookings = Booking.objects.filter(
+        user=request.user,
+        status='Completed',
+        payment_status='Paid'
+    ).order_by('-payment_date', '-created_at')
+    
+    return render(request, "work_history.html", {
+        'completed_bookings': completed_bookings,
+    })
 
 @login_required
 @user_role_required
@@ -1033,8 +1131,9 @@ def mark_work_completed(request, booking_id):
             booking.status = 'Completed'
             booking.completion_notes = form.cleaned_data.get('completion_notes', '')
             booking.final_amount = form.cleaned_data['final_amount']
-            # Set payment_requested = True (payment is requested during completion)
+            # Set payment_requested = True and payment_status = "Pending" (payment is requested during completion)
             booking.payment_requested = True
+            booking.payment_status = "Pending"
             booking.save()
             
             # Create WorkProgress entry for completion

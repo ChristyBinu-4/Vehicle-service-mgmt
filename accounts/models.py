@@ -188,6 +188,20 @@ class Booking(models.Model):
     payment_requested = models.BooleanField(default=False)
     final_amount = models.DecimalField(max_digits=10, decimal_places=2, blank=True, null=True)
     completion_notes = models.TextField(blank=True, null=True)
+    
+    # Payment status tracking
+    PAYMENT_STATUS_CHOICES = (
+        ("Pending", "Pending"),
+        ("Paid", "Paid"),
+    )
+    payment_status = models.CharField(
+        max_length=20,
+        choices=PAYMENT_STATUS_CHOICES,
+        blank=True,
+        null=True,
+        help_text="Payment status: Pending or Paid"
+    )
+    payment_date = models.DateTimeField(blank=True, null=True, help_text="Date and time when payment was completed")
 
     def __str__(self):
         return f"{self.vehicle_number} - {self.servicer.name}"

@@ -86,8 +86,19 @@
         </a>
 
         <a href="{% url 'user_payment' %}" class="{% if current == 'user_payment' %}active{% endif %}">
+            <i class="bi bi-credit-card me-2"></i>Payment
+        </a>
+        <a href="{% url 'user_work_history' %}" class="{% if current == 'user_work_history' %}active{% endif %}">
+            <i class="bi bi-clock-history me-2"></i>Work History
+        </a>
+        <a href="{% url 'user_payment' %}" class="{% if current == 'user_payment' %}active{% endif %}">
             <span class="material-symbols-outlined">payment</span>
             Payment
+        </a>
+
+        <a href="{% url 'user_work_history' %}" class="{% if current == 'user_work_history' %}active{% endif %}">
+            <span class="material-symbols-outlined">history</span>
+            Work History
         </a>
 
     </nav>
