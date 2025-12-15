@@ -1049,7 +1049,7 @@ def accept_booking(request, booking_id):
     # Prevent accepting already accepted/rejected bookings
     if booking.status != 'Requested':
         messages.error(request, f"Cannot accept booking. Current status: {booking.get_status_display()}")
-        return redirect("servicer_worklist?tab=requested")
+        return HttpResponseRedirect(reverse("servicer_worklist") + "?tab=requested")
     
     if request.method == "POST":
         form = AcceptBookingForm(request.POST)
@@ -1103,7 +1103,7 @@ def reject_booking(request, booking_id):
     # Prevent rejecting already accepted/rejected bookings
     if booking.status != 'Requested':
         messages.error(request, f"Cannot reject booking. Current status: {booking.get_status_display()}")
-        return redirect("servicer_worklist?tab=requested")
+        return HttpResponseRedirect(reverse("servicer_worklist") + "?tab=requested")
     
     if request.method == "POST":
         form = RejectBookingForm(request.POST)
@@ -1122,7 +1122,7 @@ def reject_booking(request, booking_id):
             )
             
             messages.success(request, "Booking rejected.")
-            return redirect("servicer_worklist?tab=requested")
+            return HttpResponseRedirect(reverse("servicer_worklist") + "?tab=requested")
     else:
         form = RejectBookingForm()
     
@@ -1166,7 +1166,7 @@ def create_diagnosis(request, booking_id):
     # Precondition: Only allow diagnosis creation for Pending bookings
     if booking.status != 'Pending':
         messages.error(request, f"Cannot create diagnosis. Booking status must be Pending. Current status: {booking.get_status_display()}")
-        return redirect("servicer_worklist?tab=pending")
+        return HttpResponseRedirect(reverse("servicer_worklist") + "?tab=pending")
     
     # Precondition: Prevent duplicate diagnosis
     if hasattr(booking, 'diagnosis'):
@@ -1198,7 +1198,7 @@ def create_diagnosis(request, booking_id):
             # No need to update booking.status - it's already Pending
             
             messages.success(request, "Diagnosis submitted successfully! Waiting for user approval.")
-            return redirect("servicer_worklist?tab=pending")
+            return HttpResponseRedirect(reverse("servicer_worklist") + "?tab=pending")
     else:
         form = DiagnosisForm()
     
@@ -1242,7 +1242,7 @@ def add_progress_update(request, booking_id):
     # Precondition: Only allow progress updates for Ongoing bookings
     if booking.status != 'Ongoing':
         messages.error(request, f"Cannot add progress update. Booking status must be Ongoing. Current status: {booking.get_status_display()}")
-        return redirect("servicer_worklist?tab=ongoing")
+        return HttpResponseRedirect(reverse("servicer_worklist") + "?tab=ongoing")
     
     # Precondition: Diagnosis must exist and be approved by user
     if not hasattr(booking, 'diagnosis'):
@@ -1318,7 +1318,7 @@ def mark_work_completed(request, booking_id):
     # Precondition: Only allow completion for Ongoing bookings
     if booking.status != 'Ongoing':
         messages.error(request, f"Cannot mark as completed. Booking status must be Ongoing. Current status: {booking.get_status_display()}")
-        return redirect("servicer_worklist?tab=ongoing")
+        return HttpResponseRedirect(reverse("servicer_worklist") + "?tab=ongoing")
     
     # Precondition: At least one WorkProgress entry must exist
     progress_count = WorkProgress.objects.filter(booking=booking).count()
@@ -1371,7 +1371,7 @@ def mark_work_completed(request, booking_id):
             )
             
             messages.success(request, "Work marked as completed and payment request sent to user!")
-            return redirect("servicer_worklist?tab=completed")
+            return HttpResponseRedirect(reverse("servicer_worklist") + "?tab=completed")
     else:
         # Pre-fill final_amount with diagnosis estimate if available
         form = CompleteWorkForm(initial={'final_amount': estimated_cost})
