@@ -971,7 +971,15 @@ class AcceptBookingForm(forms.Form):
 
 
 class DiagnosisForm(forms.ModelForm):
-    """Form for creating diagnosis."""
+    """
+    Form for creating diagnosis.
+    
+    Fields:
+    - report: Problem description (required)
+    - work_items: List of work items (required)
+    - estimated_cost: Estimated cost (optional)
+    - estimated_completion_time: Estimated completion date/time (optional)
+    """
     work_items = forms.CharField(
         required=True,
         widget=forms.Textarea(attrs={
@@ -993,7 +1001,8 @@ class DiagnosisForm(forms.ModelForm):
             'class': 'form-control',
             'placeholder': '0.00',
             'step': '0.01'
-        })
+        }),
+        help_text='Optional: Enter estimated cost in ₹'
     )
     
     estimated_completion_time = forms.CharField(
@@ -1001,8 +1010,9 @@ class DiagnosisForm(forms.ModelForm):
         max_length=100,
         widget=forms.TextInput(attrs={
             'class': 'form-control',
-            'placeholder': 'e.g., 2-3 days'
-        })
+            'placeholder': 'e.g., 2-3 days or Dec 25, 2024'
+        }),
+        help_text='Optional: Enter estimated completion time or date'
     )
     
     class Meta:
@@ -1012,8 +1022,14 @@ class DiagnosisForm(forms.ModelForm):
             'report': forms.Textarea(attrs={
                 'class': 'form-control',
                 'rows': 6,
-                'placeholder': 'Enter diagnosis details...',
+                'placeholder': 'Enter problem description and diagnosis details...',
             }),
+        }
+        labels = {
+            'report': 'Problem Description',
+        }
+        help_texts = {
+            'report': 'Describe the problems found during vehicle examination',
         }
     
     def clean_work_items(self):
@@ -1022,6 +1038,13 @@ class DiagnosisForm(forms.ModelForm):
         if not work_items or not work_items.strip():
             raise forms.ValidationError("Please provide at least one work item.")
         return work_items
+    
+    def clean_report(self):
+        """Validate report is not empty."""
+        report = self.cleaned_data.get('report', '')
+        if not report or not report.strip():
+            raise forms.ValidationError("Problem description is required.")
+        return report
 
 
 class ProgressUpdateForm(forms.ModelForm):

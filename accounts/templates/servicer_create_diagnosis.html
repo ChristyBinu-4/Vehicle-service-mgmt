@@ -1,29 +1,64 @@
 {% extends "servicer_sidebar.html" %}
 {% block content %}
 
+<!-- Success/Error Messages -->
+{% if messages %}
+    {% for message in messages %}
+    <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+        {{ message }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+    {% endfor %}
+{% endif %}
+
 <div class="container-fluid">
-    <h2 class="fw-bold mb-4">Create Diagnosis - Booking #{{ booking.id }}</h2>
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="fw-bold mb-1">Create Diagnosis</h2>
+            <p class="text-muted mb-0">Service Request #SRV-{{ booking.id }}</p>
+        </div>
+        <a href="{% url 'servicer_worklist' %}?tab=pending" class="btn btn-outline-secondary">
+            Back to Worklist
+        </a>
+    </div>
 
     <div class="row">
-        <!-- Left Side: Vehicle Info and Complaints -->
+        <!-- Left Side: Booking Summary (Read-only) -->
         <div class="col-md-5">
-            <div class="card mb-3">
+            <div class="card mb-3 border-primary">
+                <div class="card-header bg-light">
+                    <h5 class="card-title mb-0 fw-semibold">Booking Summary</h5>
+                </div>
                 <div class="card-body">
-                    <h5 class="card-title">Vehicle Information</h5>
-                    <p><strong>Make & Model:</strong> {{ booking.vehicle_make }} {{ booking.vehicle_model }}</p>
-                    <p><strong>Vehicle Number:</strong> {{ booking.vehicle_number }}</p>
-                    <p><strong>Year:</strong> {{ booking.year }}</p>
-                    <p><strong>Fuel Type:</strong> {{ booking.fuel_type }}</p>
+                    <p class="mb-2"><strong>Service ID:</strong> SRV-{{ booking.id }}</p>
+                    <p class="mb-2"><strong>User:</strong> {{ booking.user.username }}</p>
+                    <p class="mb-2"><strong>Name:</strong> {{ booking.user.first_name }} {{ booking.user.last_name }}</p>
+                    <hr>
+                    <h6 class="fw-semibold mb-2">Vehicle Information</h6>
+                    <p class="mb-1"><strong>Make & Model:</strong> {{ booking.vehicle_make }} {{ booking.vehicle_model }}</p>
+                    <p class="mb-1"><strong>Vehicle Number:</strong> {{ booking.vehicle_number }}</p>
+                    <p class="mb-1"><strong>Year:</strong> {{ booking.year }}</p>
+                    <p class="mb-1"><strong>Fuel Type:</strong> {{ booking.fuel_type }}</p>
+                    <hr>
+                    <h6 class="fw-semibold mb-2">Work Requested</h6>
+                    <p class="mb-1"><strong>Work Type:</strong> {{ booking.work_type }}</p>
+                    <p class="mb-1"><strong>Preferred Date:</strong> {{ booking.preferred_date|date:"M d, Y" }}</p>
                 </div>
             </div>
             <div class="card">
+                <div class="card-header bg-light">
+                    <h5 class="card-title mb-0 fw-semibold">Customer Complaints</h5>
+                </div>
                 <div class="card-body">
-                    <h5 class="card-title">Customer Complaints</h5>
-                    <ul>
+                    {% if complaint_list %}
+                    <ul class="mb-0">
                         {% for complaint in complaint_list %}
                         <li>{{ complaint }}</li>
                         {% endfor %}
                     </ul>
+                    {% else %}
+                    <p class="text-muted mb-0">No complaints reported.</p>
+                    {% endif %}
                 </div>
             </div>
         </div>
@@ -31,44 +66,60 @@
         <!-- Right Side: Diagnosis Form -->
         <div class="col-md-7">
             <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="card-title mb-0 fw-semibold">Diagnosis Form</h5>
+                </div>
                 <div class="card-body">
-                    <h5 class="card-title mb-3">Diagnosis Details</h5>
                     <form method="POST">
                         {% csrf_token %}
                         <div class="mb-3">
-                            <label for="id_report" class="form-label fw-semibold">Diagnosis Report <span class="text-danger">*</span></label>
+                            <label for="id_report" class="form-label fw-semibold">Problem Description <span class="text-danger">*</span></label>
                             {{ form.report }}
+                            {% if form.report.help_text %}
+                            <small class="form-text text-muted">{{ form.report.help_text }}</small>
+                            {% endif %}
                             {% if form.report.errors %}
-                                <div class="text-danger">{{ form.report.errors }}</div>
+                                <div class="text-danger mt-1">{{ form.report.errors }}</div>
                             {% endif %}
                         </div>
                         <div class="mb-3">
                             <label for="id_work_items" class="form-label fw-semibold">Work Items <span class="text-danger">*</span></label>
                             {{ form.work_items }}
+                            {% if form.work_items.help_text %}
                             <small class="form-text text-muted">{{ form.work_items.help_text }}</small>
+                            {% endif %}
                             {% if form.work_items.errors %}
-                                <div class="text-danger">{{ form.work_items.errors }}</div>
+                                <div class="text-danger mt-1">{{ form.work_items.errors }}</div>
                             {% endif %}
                         </div>
                         <div class="row">
                             <div class="col-md-6 mb-3">
                                 <label for="id_estimated_cost" class="form-label fw-semibold">Estimated Cost (₹)</label>
                                 {{ form.estimated_cost }}
+                                {% if form.estimated_cost.help_text %}
+                                <small class="form-text text-muted">{{ form.estimated_cost.help_text }}</small>
+                                {% endif %}
                                 {% if form.estimated_cost.errors %}
-                                    <div class="text-danger">{{ form.estimated_cost.errors }}</div>
+                                    <div class="text-danger mt-1">{{ form.estimated_cost.errors }}</div>
                                 {% endif %}
                             </div>
                             <div class="col-md-6 mb-3">
                                 <label for="id_estimated_completion_time" class="form-label fw-semibold">Estimated Completion Time</label>
                                 {{ form.estimated_completion_time }}
+                                {% if form.estimated_completion_time.help_text %}
+                                <small class="form-text text-muted">{{ form.estimated_completion_time.help_text }}</small>
+                                {% endif %}
                                 {% if form.estimated_completion_time.errors %}
-                                    <div class="text-danger">{{ form.estimated_completion_time.errors }}</div>
+                                    <div class="text-danger mt-1">{{ form.estimated_completion_time.errors }}</div>
                                 {% endif %}
                             </div>
                         </div>
+                        <div class="alert alert-info">
+                            <strong>Note:</strong> After submission, the diagnosis will be sent to the user for approval. The booking will remain in "Pending" status until the user approves.
+                        </div>
                         <div class="d-flex gap-2">
-                            <button type="submit" class="btn btn-primary">Send Diagnosis</button>
-                            <a href="{% url 'servicer_booking_detail' booking.id %}" class="btn btn-secondary">Cancel</a>
+                            <button type="submit" class="btn btn-primary">Submit Diagnosis</button>
+                            <a href="{% url 'servicer_worklist' %}?tab=pending" class="btn btn-secondary">Cancel</a>
                         </div>
                     </form>
                 </div>

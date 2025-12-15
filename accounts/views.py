@@ -821,28 +821,43 @@ def reject_booking(request, booking_id):
 def create_diagnosis(request, booking_id):
     """
     Create diagnosis for a booking.
-    Booking must be in Pending status (after acceptance).
-    Diagnosis creation keeps status as Pending until user approves.
+    
+    Preconditions:
+    - Servicer is authenticated (enforced by decorators)
+    - Booking belongs to this servicer
+    - booking.status == "Pending"
+    - Diagnosis does NOT already exist
+    
+    On submit:
+    - Create Diagnosis record linked to booking
+    - Keep booking.status as "Pending" (user must approve)
+    - Log action in WorkProgress
+    - Redirect to Servicer Worklist
     """
     # Get servicer
     try:
         servicer = Servicer.objects.get(email=request.user.email)
     except Servicer.DoesNotExist:
-        messages.error(request, "Servicer profile not found.")
+        messages.error(request, "Servicer profile not found. Please contact support.")
         return redirect("servicer_worklist")
     
-    # Validate booking belongs to servicer and is in Pending status
+    # Validate booking belongs to servicer
     booking = get_object_or_404(Booking, id=booking_id, servicer=servicer)
     
-    # Only allow diagnosis creation for Pending bookings
+    # Precondition: Only allow diagnosis creation for Pending bookings
     if booking.status != 'Pending':
         messages.error(request, f"Cannot create diagnosis. Booking status must be Pending. Current status: {booking.get_status_display()}")
         return redirect("servicer_worklist?tab=pending")
     
+    # Precondition: Prevent duplicate diagnosis
+    if hasattr(booking, 'diagnosis'):
+        messages.warning(request, "Diagnosis already exists for this booking. You cannot create another diagnosis.")
+        return redirect("servicer_booking_detail", booking_id=booking.id)
+    
     if request.method == "POST":
         form = DiagnosisForm(request.POST)
         if form.is_valid():
-            # Check if diagnosis already exists
+            # Double-check diagnosis doesn't exist (race condition protection)
             if hasattr(booking, 'diagnosis'):
                 messages.warning(request, "Diagnosis already exists for this booking.")
                 return redirect("servicer_booking_detail", booking_id=booking.id)
@@ -856,12 +871,12 @@ def create_diagnosis(request, booking_id):
             WorkProgress.objects.create(
                 booking=booking,
                 title="Diagnosis Submitted",
-                description="Diagnosis report has been submitted and is waiting for user approval.",
+                description=f"Diagnosis report submitted. Estimated cost: ₹{diagnosis.estimated_cost if diagnosis.estimated_cost else 'Not specified'}. Waiting for user approval.",
                 status="Pending"
             )
             
-            # Status remains Pending (already set when booking was accepted)
-            # User will approve diagnosis to move to Ongoing
+            # Status remains Pending (user must approve to move to Ongoing)
+            # No need to update booking.status - it's already Pending
             
             messages.success(request, "Diagnosis submitted successfully! Waiting for user approval.")
             return redirect("servicer_worklist?tab=pending")
