@@ -43,6 +43,9 @@ urlpatterns = [
     path('monitor/home/', views.admin_home, name='admin_home'),
     path('monitor/customers/', views.admin_customers, name='admin_customers'),
     path('monitor/servicers/', views.admin_servicers, name='admin_servicers'),
+    path('monitor/bookings/', views.admin_bookings, name='admin_bookings'),
+    path('monitor/payments/', views.admin_payments, name='admin_payments'),
+    path('monitor/feedback/', views.admin_feedback, name='admin_feedback'),
     path('monitor/settings/', views.admin_settings, name='admin_settings'),
     path('monitor/logout/', views.admin_logout, name='admin_logout'),
 ]

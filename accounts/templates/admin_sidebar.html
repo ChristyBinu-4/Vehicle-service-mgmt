@@ -72,6 +72,21 @@
             List of Servicers
         </a>
 
+        <a href="{% url 'admin_bookings' %}" class="{% if current == 'admin_bookings' %}active{% endif %}">
+            <span class="material-symbols-outlined">assignment</span>
+            Bookings
+        </a>
+
+        <a href="{% url 'admin_payments' %}" class="{% if current == 'admin_payments' %}active{% endif %}">
+            <span class="material-symbols-outlined">payments</span>
+            Payments
+        </a>
+
+        <a href="{% url 'admin_feedback' %}" class="{% if current == 'admin_feedback' %}active{% endif %}">
+            <span class="material-symbols-outlined">rate_review</span>
+            Feedback
+        </a>
+
         <a href="{% url 'admin_settings' %}" class="{% if current == 'admin_settings' %}active{% endif %}">
             <span class="material-symbols-outlined">settings</span>
             Settings

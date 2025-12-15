@@ -1,0 +1,68 @@
+{% extends "admin_sidebar.html" %}
+{% block content %}
+
+<main class="flex-grow-1 p-4">
+    <!-- Success/Error Messages -->
+    {% if messages %}
+        {% for message in messages %}
+        <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+        {% endfor %}
+    {% endif %}
+
+    <header class="mb-4">
+        <h2 class="fw-bold">Booking Oversight</h2>
+        <p class="text-muted">View all bookings in the system (read-only)</p>
+    </header>
+
+    <!-- Bookings List -->
+    <div class="bg-white p-4 rounded shadow-sm">
+        {% if bookings %}
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Service ID</th>
+                            <th>User</th>
+                            <th>Servicer</th>
+                            <th>Work Type</th>
+                            <th>Vehicle</th>
+                            <th>Status</th>
+                            <th>Created Date</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for booking in bookings %}
+                        <tr>
+                            <td>SRV-{{ booking.id }}</td>
+                            <td>{{ booking.user.username }}</td>
+                            <td>{{ booking.servicer.name }}</td>
+                            <td>{{ booking.work_type }}</td>
+                            <td>{{ booking.vehicle_make }} {{ booking.vehicle_model }}</td>
+                            <td>
+                                <span class="badge 
+                                    {% if booking.status == 'Requested' %}bg-warning
+                                    {% elif booking.status == 'Pending' %}bg-secondary
+                                    {% elif booking.status == 'Ongoing' %}bg-primary
+                                    {% elif booking.status == 'Completed' %}bg-success
+                                    {% else %}bg-danger{% endif %}
+                                ">
+                                    {{ booking.get_status_display }}
+                                </span>
+                            </td>
+                            <td>{{ booking.created_at|date:"M d, Y" }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <p class="text-muted">No bookings found.</p>
+        {% endif %}
+    </div>
+
+</main>
+
+{% endblock %}

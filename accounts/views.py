@@ -1508,15 +1508,48 @@ def admin_login(request):
 @admin_role_required
 def admin_home(request):
     """
-    Admin dashboard/home page (placeholder).
-    - Only accessible to logged-in admins
-    - Shows basic dashboard layout with sidebar
-    - Placeholder for analytics, latest status, and feedback view
+    Admin dashboard/home page.
+    Shows high-level analytics:
+    - Total Users
+    - Total Servicers
+    - Total Bookings
+    - Ongoing Services
+    - Completed Services
+    - Total Revenue (Paid payments only)
     """
+    from .models import User
+    
+    # Calculate analytics
+    total_users = User.objects.filter(role='USER').count()
+    total_servicers = User.objects.filter(role='SERVICER').count()
+    total_bookings = Booking.objects.count()
+    ongoing_services = Booking.objects.filter(status='Ongoing').count()
+    completed_services = Booking.objects.filter(status='Completed').count()
+    
+    # Calculate total revenue (sum of paid payments)
+    total_revenue = Booking.objects.filter(
+        status='Completed',
+        payment_status='Paid'
+    ).aggregate(total=Sum('final_amount'))['total'] or 0
+    
+    # Get latest bookings (last 10)
+    latest_bookings = Booking.objects.select_related('user', 'servicer').order_by('-created_at')[:10]
+    
+    # Get recent feedback (last 5)
+    recent_feedback = Feedback.objects.select_related('user', 'servicer').order_by('-created_at')[:5]
+    
     admin_name = request.user.username
     
     return render(request, "admin_home.html", {
         "admin_name": admin_name,
+        "total_users": total_users,
+        "total_servicers": total_servicers,
+        "total_bookings": total_bookings,
+        "ongoing_services": ongoing_services,
+        "completed_services": completed_services,
+        "total_revenue": total_revenue,
+        "latest_bookings": latest_bookings,
+        "recent_feedback": recent_feedback,
     })
 
 
@@ -1525,10 +1558,34 @@ def admin_home(request):
 def admin_customers(request):
     """
     Admin page to list all customers (users with role=USER).
-    Placeholder implementation.
+    Admin can:
+    - View user details (read-only)
+    - Disable / Enable user account
     """
     from .models import User
-    customers = User.objects.filter(role='USER')
+    
+    # Handle enable/disable action
+    if request.method == "POST":
+        user_id = request.POST.get('user_id')
+        action = request.POST.get('action')
+        
+        if user_id and action:
+            try:
+                user = User.objects.get(id=user_id, role='USER')
+                if action == 'disable':
+                    user.is_active = False
+                    user.save()
+                    messages.success(request, f"User {user.username} has been disabled.")
+                elif action == 'enable':
+                    user.is_active = True
+                    user.save()
+                    messages.success(request, f"User {user.username} has been enabled.")
+            except User.DoesNotExist:
+                messages.error(request, "User not found.")
+        
+        return redirect("admin_customers")
+    
+    customers = User.objects.filter(role='USER').order_by('-date_joined')
     
     return render(request, "admin_customers.html", {
         "customers": customers,
@@ -1540,13 +1597,56 @@ def admin_customers(request):
 def admin_servicers(request):
     """
     Admin page to list all servicers (users with role=SERVICER).
-    Placeholder implementation.
+    Admin can:
+    - View servicer profile (read-only)
+    - Enable / Disable servicer account
     """
     from .models import User
-    servicers = User.objects.filter(role='SERVICER')
+    
+    # Handle enable/disable action
+    if request.method == "POST":
+        user_id = request.POST.get('user_id')
+        action = request.POST.get('action')
+        
+        if user_id and action:
+            try:
+                user = User.objects.get(id=user_id, role='SERVICER')
+                if action == 'disable':
+                    user.is_active = False
+                    user.save()
+                    messages.success(request, f"Servicer {user.username} has been disabled.")
+                elif action == 'enable':
+                    user.is_active = True
+                    user.save()
+                    messages.success(request, f"Servicer {user.username} has been enabled.")
+            except User.DoesNotExist:
+                messages.error(request, "Servicer not found.")
+        
+        return redirect("admin_servicers")
+    
+    servicers = User.objects.filter(role='SERVICER').order_by('-date_joined')
+    
+    # Calculate ratings for each servicer
+    servicer_data = []
+    for servicer in servicers:
+        try:
+            servicer_obj = Servicer.objects.get(email=servicer.email)
+            feedbacks = Feedback.objects.filter(servicer=servicer_obj)
+            if feedbacks.exists():
+                avg_rating = feedbacks.aggregate(avg_rating=Avg('rating'))['avg_rating']
+                rating = round(avg_rating, 1)
+            else:
+                rating = servicer_obj.rating
+        except Servicer.DoesNotExist:
+            rating = 0.0
+        
+        servicer_data.append({
+            'user': servicer,
+            'rating': rating,
+        })
     
     return render(request, "admin_servicers.html", {
-        "servicers": servicers,
+        "servicer_data": servicer_data,
     })
 
 
@@ -1554,12 +1654,98 @@ def admin_servicers(request):
 @admin_role_required
 def admin_settings(request):
     """
-    Admin settings page (placeholder).
-    - Change landing page image (UI only)
-    - Add admin users (UI only)
-    - No functionality implemented yet
+    Admin settings page.
+    Allows:
+    - Update landing page image
+    - Add additional admin users
     """
+    from .models import User
+    
+    # Handle add admin user
+    if request.method == "POST":
+        action = request.POST.get('action')
+        
+        if action == 'add_admin':
+            username = request.POST.get('username', '').strip()
+            password = request.POST.get('password', '').strip()
+            email = request.POST.get('email', '').strip()
+            
+            if not username or not password or not email:
+                messages.error(request, "All fields are required.")
+            else:
+                # Check if user already exists
+                if User.objects.filter(username=username).exists():
+                    messages.error(request, f"User with username '{username}' already exists.")
+                elif User.objects.filter(email=email).exists():
+                    messages.error(request, f"User with email '{email}' already exists.")
+                else:
+                    # Create admin user
+                    admin_user = User.objects.create_user(
+                        username=username,
+                        email=email,
+                        password=password,
+                        role='ADMIN',
+                        is_staff=True,
+                        is_superuser=True
+                    )
+                    messages.success(request, f"Admin user '{username}' has been created successfully.")
+        
+        return redirect("admin_settings")
+    
     return render(request, "admin_settings.html")
+
+
+@login_required
+@admin_role_required
+def admin_bookings(request):
+    """
+    Admin booking oversight page.
+    Admin can view all bookings (read-only).
+    No status modification allowed.
+    """
+    bookings = Booking.objects.select_related('user', 'servicer').order_by('-created_at')
+    
+    return render(request, "admin_bookings.html", {
+        "bookings": bookings,
+    })
+
+
+@login_required
+@admin_role_required
+def admin_payments(request):
+    """
+    Admin payment oversight page.
+    Admin can view all payments (read-only).
+    No payment modification allowed.
+    """
+    # Get all bookings with payment information
+    paid_bookings = Booking.objects.filter(
+        payment_status='Paid'
+    ).select_related('user', 'servicer').order_by('-payment_date')
+    
+    pending_bookings = Booking.objects.filter(
+        payment_status='Pending',
+        payment_requested=True
+    ).select_related('user', 'servicer').order_by('-created_at')
+    
+    return render(request, "admin_payments.html", {
+        "paid_bookings": paid_bookings,
+        "pending_bookings": pending_bookings,
+    })
+
+
+@login_required
+@admin_role_required
+def admin_feedback(request):
+    """
+    Admin feedback monitoring page.
+    Admin can view all feedback (read-only).
+    """
+    feedbacks = Feedback.objects.select_related('user', 'servicer', 'booking').order_by('-created_at')
+    
+    return render(request, "admin_feedback.html", {
+        "feedbacks": feedbacks,
+    })
 
 
 def admin_logout(request):

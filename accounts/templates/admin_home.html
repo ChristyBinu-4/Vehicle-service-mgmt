@@ -2,33 +2,216 @@
 {% block content %}
 
 <main class="flex-grow-1 p-4">
+    <!-- Success/Error Messages -->
+    {% if messages %}
+        {% for message in messages %}
+        <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+        {% endfor %}
+    {% endif %}
 
     <header class="mb-4">
         <h2 class="fw-bold">Admin Dashboard</h2>
+        <p class="text-muted">Welcome, {{ admin_name }}!</p>
     </header>
 
-    <!-- Welcome Section -->
-    <div class="bg-white p-4 rounded shadow-sm mb-4">
-        <h4 class="fw-semibold">Welcome, {{ admin_name }}!</h4>
-        <p class="text-muted mb-0">This is your admin dashboard. Manage the system from here.</p>
+    <!-- Analytics Cards -->
+    <div class="row g-4 mb-4">
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="text-muted mb-1">Total Users</h6>
+                            <h3 class="fw-bold mb-0">{{ total_users }}</h3>
+                        </div>
+                        <div class="text-primary">
+                            <span class="material-symbols-outlined" style="font-size: 40px;">people</span>
+                        </div>
+                    </div>
+                    <a href="{% url 'admin_customers' %}" class="btn btn-sm btn-outline-primary mt-3 w-100">
+                        View Users
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="text-muted mb-1">Total Servicers</h6>
+                            <h3 class="fw-bold mb-0">{{ total_servicers }}</h3>
+                        </div>
+                        <div class="text-info">
+                            <span class="material-symbols-outlined" style="font-size: 40px;">build</span>
+                        </div>
+                    </div>
+                    <a href="{% url 'admin_servicers' %}" class="btn btn-sm btn-outline-info mt-3 w-100">
+                        View Servicers
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="text-muted mb-1">Total Bookings</h6>
+                            <h3 class="fw-bold mb-0">{{ total_bookings }}</h3>
+                        </div>
+                        <div class="text-secondary">
+                            <span class="material-symbols-outlined" style="font-size: 40px;">assignment</span>
+                        </div>
+                    </div>
+                    <a href="{% url 'admin_bookings' %}" class="btn btn-sm btn-outline-secondary mt-3 w-100">
+                        View Bookings
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="text-muted mb-1">Ongoing Services</h6>
+                            <h3 class="fw-bold mb-0">{{ ongoing_services }}</h3>
+                        </div>
+                        <div class="text-warning">
+                            <span class="material-symbols-outlined" style="font-size: 40px;">work</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="text-muted mb-1">Completed Services</h6>
+                            <h3 class="fw-bold mb-0">{{ completed_services }}</h3>
+                        </div>
+                        <div class="text-success">
+                            <span class="material-symbols-outlined" style="font-size: 40px;">check_circle</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="text-muted mb-1">Total Revenue</h6>
+                            <h3 class="fw-bold mb-0">₹{{ total_revenue|floatformat:2 }}</h3>
+                        </div>
+                        <div class="text-success">
+                            <span class="material-symbols-outlined" style="font-size: 40px;">payments</span>
+                        </div>
+                    </div>
+                    <a href="{% url 'admin_payments' %}" class="btn btn-sm btn-outline-success mt-3 w-100">
+                        View Payments
+                    </a>
+                </div>
+            </div>
+        </div>
     </div>
 
-    <!-- Analytics Section (Placeholder) -->
+    <!-- Latest Bookings -->
     <div class="bg-white p-4 rounded shadow-sm mb-4">
-        <h5 class="fw-semibold mb-3">Analytics</h5>
-        <p class="text-muted">Analytics functionality will be implemented in future updates.</p>
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h5 class="fw-semibold mb-0">Latest Bookings</h5>
+            <a href="{% url 'admin_bookings' %}" class="btn btn-sm btn-outline-primary">View All</a>
+        </div>
+        {% if latest_bookings %}
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Service ID</th>
+                            <th>User</th>
+                            <th>Servicer</th>
+                            <th>Work Type</th>
+                            <th>Status</th>
+                            <th>Created</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for booking in latest_bookings %}
+                        <tr>
+                            <td>SRV-{{ booking.id }}</td>
+                            <td>{{ booking.user.username }}</td>
+                            <td>{{ booking.servicer.name }}</td>
+                            <td>{{ booking.work_type }}</td>
+                            <td>
+                                <span class="badge 
+                                    {% if booking.status == 'Requested' %}bg-warning
+                                    {% elif booking.status == 'Pending' %}bg-secondary
+                                    {% elif booking.status == 'Ongoing' %}bg-primary
+                                    {% elif booking.status == 'Completed' %}bg-success
+                                    {% else %}bg-danger{% endif %}
+                                ">
+                                    {{ booking.get_status_display }}
+                                </span>
+                            </td>
+                            <td>{{ booking.created_at|date:"M d, Y" }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <p class="text-muted">No bookings yet.</p>
+        {% endif %}
     </div>
 
-    <!-- Latest Status Section (Placeholder) -->
-    <div class="bg-white p-4 rounded shadow-sm mb-4">
-        <h5 class="fw-semibold mb-3">Latest Updates</h5>
-        <p class="text-muted">Latest status of ongoing services will be displayed here.</p>
-    </div>
-
-    <!-- Feedback View Section (Placeholder) -->
-    <div class="bg-white p-4 rounded shadow-sm mb-4">
-        <h5 class="fw-semibold mb-3">Feedback View</h5>
-        <p class="text-muted">Feedback from users and servicers will be displayed here.</p>
+    <!-- Recent Feedback -->
+    <div class="bg-white p-4 rounded shadow-sm">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h5 class="fw-semibold mb-0">Recent Feedback</h5>
+            <a href="{% url 'admin_feedback' %}" class="btn btn-sm btn-outline-primary">View All</a>
+        </div>
+        {% if recent_feedback %}
+            <div class="list-group">
+                {% for feedback in recent_feedback %}
+                <div class="list-group-item">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div class="flex-grow-1">
+                            <div class="d-flex align-items-center gap-2 mb-2">
+                                <h6 class="mb-0">{{ feedback.user.username }}</h6>
+                                <span class="badge bg-warning text-dark">
+                                    {% for i in "12345" %}
+                                        {% if forloop.counter <= feedback.rating %}
+                                            ⭐
+                                        {% else %}
+                                            ☆
+                                        {% endif %}
+                                    {% endfor %}
+                                    {{ feedback.rating }}/5
+                                </span>
+                                <small class="text-muted">for {{ feedback.servicer.name }}</small>
+                            </div>
+                            <p class="mb-1">{{ feedback.message }}</p>
+                            <small class="text-muted">{{ feedback.created_at|date:"M d, Y h:i A" }}</small>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <p class="text-muted">No feedback yet.</p>
+        {% endif %}
     </div>
 
 </main>
