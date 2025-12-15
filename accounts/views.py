@@ -90,7 +90,6 @@ def admin_role_required(view_func):
 
 
 
-from django.contrib.auth.decorators import login_required
 
 def login_page(request):
     """
@@ -206,27 +205,52 @@ def user_home(request):
 @login_required
 @user_role_required
 def user_search(request):
-    query = request.GET.get("q", "")
-    work_type = request.GET.get("type", "")
-    location = request.GET.get("location", "")
+    """
+    Search for servicers using real Servicer model data.
+    - Queries only registered servicers from database
+    - Supports search by name, work type, location
+    - Handles comma-separated work types
+    - Shows all servicers regardless of status (can filter by status if needed)
+    """
+    query = request.GET.get("q", "").strip()
+    work_type = request.GET.get("type", "").strip()
+    location = request.GET.get("location", "").strip()
 
-    servicers = Servicer.objects.all()
+    # Query only real Servicer model instances (no dummy data)
+    servicers = Servicer.objects.all().order_by('name')
 
+    # Text search: search in name, work_type, and location
     if query:
         servicers = servicers.filter(
-            name__icontains=query
-        ) | servicers.filter(
-            work_type__icontains=query
+            Q(name__icontains=query) |
+            Q(work_type__icontains=query) |
+            Q(location__icontains=query)
         )
 
+    # Work type filter: handle comma-separated work types
+    # If work_type is provided, find servicers whose work_type contains it
     if work_type:
-        servicers = servicers.filter(work_type=work_type)
+        servicers = servicers.filter(work_type__icontains=work_type)
 
+    # Location filter: case-insensitive partial match
     if location:
         servicers = servicers.filter(location__icontains=location)
 
-    work_types = Servicer.objects.values_list("work_type", flat=True).distinct()
-    locations = Servicer.objects.values_list("location", flat=True).distinct()
+    # Get all unique work types for dropdown
+    # Parse comma-separated work types and get individual types
+    all_work_types = set()
+    for servicer in Servicer.objects.exclude(work_type__isnull=True).exclude(work_type=''):
+        # Split by comma and add individual work types
+        types = [wt.strip() for wt in servicer.work_type.split(',') if wt.strip()]
+        all_work_types.update(types)
+    work_types = sorted(list(all_work_types))
+
+    # Get all unique locations for dropdown (excluding empty/null)
+    locations = Servicer.objects.exclude(
+        location__isnull=True
+    ).exclude(
+        location=''
+    ).values_list("location", flat=True).distinct().order_by('location')
 
     return render(request, "user_search.html", {
         "servicers": servicers,
@@ -489,10 +513,14 @@ def user_profile(request):
     """
     Handle user profile viewing and editing.
     - Display user profile information
-    - Allow editing of first_name, last_name, email, phone
+    - Allow editing of first_name, last_name, email, phone, address fields
     - Handle password change
+    - Always fetches fresh data from database to ensure persistence
     """
+    # Always refresh user from database to get latest data
     user = request.user
+    user.refresh_from_db()
+    
     profile_form = ProfileUpdateForm(instance=user, user=user)
     password_form = PasswordChangeForm(user=user)
     profile_success = False
@@ -507,6 +535,7 @@ def user_profile(request):
                 # Refresh user object from database to get updated data
                 user.refresh_from_db()
                 profile_success = True
+                messages.success(request, "Profile updated successfully!")
                 # Re-instantiate form with updated data
                 profile_form = ProfileUpdateForm(instance=user, user=user)
         
@@ -515,11 +544,13 @@ def user_profile(request):
             if password_form.is_valid():
                 password_form.save()
                 password_success = True
+                messages.success(request, "Password changed successfully!")
                 # Re-instantiate form
                 password_form = PasswordChangeForm(user=user)
                 # Update session to keep user logged in after password change
                 update_session_auth_hash(request, user)
     
+    # Always pass fresh user data from database
     return render(request, "user_profile.html", {
         'user': user,
         'profile_form': profile_form,
@@ -685,7 +716,15 @@ def servicer_login(request):
     if request.user.is_authenticated:
         # Check if user has SERVICER role, if not, logout and show error
         if request.user.role == 'SERVICER':
-            return redirect("servicer_home")
+            # Check if servicer profile exists before redirecting
+            try:
+                from accounts.models import Servicer
+                Servicer.objects.get(email=request.user.email)
+                return redirect("servicer_home")
+            except Servicer.DoesNotExist:
+                # Servicer profile doesn't exist - logout and show error
+                logout(request)
+                return HttpResponseRedirect(reverse("servicer_login") + "?error=no_profile")
         else:
             # User is logged in but not a SERVICER role, logout them
             logout(request)
@@ -783,8 +822,10 @@ def servicer_home(request):
     try:
         servicer = Servicer.objects.get(email=request.user.email)
     except Servicer.DoesNotExist:
+        # Servicer profile doesn't exist - logout and redirect to login with error
+        logout(request)
         messages.error(request, "Servicer profile not found. Please contact support.")
-        return redirect("servicer_login")
+        return HttpResponseRedirect(reverse("servicer_login") + "?error=no_profile")
     
     # Get booking statistics
     total_jobs_assigned = Booking.objects.filter(servicer=servicer).count()
@@ -1420,8 +1461,12 @@ def servicer_profile(request):
     - Display servicer profile information
     - Allow editing of personal info and servicer-specific fields
     - Handle password change
+    - Always fetches fresh data from database to ensure persistence
     """
+    # Always refresh user from database to get latest data
     user = request.user
+    user.refresh_from_db()
+    
     profile_form = ServicerProfileUpdateForm(instance=user, user=user)
     password_form = PasswordChangeForm(user=user)
     profile_success = False
@@ -1436,6 +1481,7 @@ def servicer_profile(request):
                 # Refresh user object from database to get updated data
                 user.refresh_from_db()
                 profile_success = True
+                messages.success(request, "Profile updated successfully!")
                 # Re-instantiate form with updated data
                 profile_form = ServicerProfileUpdateForm(instance=user, user=user)
         
@@ -1444,11 +1490,13 @@ def servicer_profile(request):
             if password_form.is_valid():
                 password_form.save()
                 password_success = True
+                messages.success(request, "Password changed successfully!")
                 # Re-instantiate form
                 password_form = PasswordChangeForm(user=user)
                 # Update session to keep user logged in after password change
                 update_session_auth_hash(request, user)
     
+    # Always pass fresh user data from database
     return render(request, "servicer_profile.html", {
         'user': user,
         'profile_form': profile_form,

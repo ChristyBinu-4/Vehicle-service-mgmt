@@ -183,6 +183,9 @@ document.addEventListener('DOMContentLoaded', function() {
       case 'invalid_role':
         errorMessage = 'Access denied.<br>This login page is for servicers only.';
         break;
+      case 'no_profile':
+        errorMessage = 'Servicer profile not found.<br>Please contact support to set up your servicer profile.';
+        break;
       default:
         errorMessage = 'An error occurred during login.<br>Please try again.';
     }

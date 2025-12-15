@@ -47,7 +47,7 @@
             </div>
 
             <div class="col-md-2 d-grid">
-                <button class="btn btn-primary">Search</button>
+                <button type="submit" class="btn btn-primary">Search</button>
             </div>
 
         </div>
@@ -77,8 +77,8 @@
                 </span>
 
                 <div class="text-secondary mt-2 small">
-                    <div>📍 {{ s.location }}</div>
-                    <div>🛠 {{ s.work_type }}</div>
+                    <div>📍 {% if s.location %}{{ s.location }}{% else %}<span class="text-muted">Location not set</span>{% endif %}</div>
+                    <div>🛠 {% if s.work_type %}{{ s.work_type }}{% else %}<span class="text-muted">Work types not set</span>{% endif %}</div>
                 </div>
             </div>
 
@@ -107,7 +107,13 @@
         </div>
     </div>
     {% empty %}
-    <p class="text-muted">No servicers found.</p>
+    <div class="card p-5 text-center">
+        <h5 class="text-muted">No servicers found</h5>
+        <p class="text-secondary">Try adjusting your search criteria or check back later.</p>
+        {% if query or selected_type or selected_location %}
+        <a href="{% url 'user_search' %}" class="btn btn-outline-primary mt-2">Clear Filters</a>
+        {% endif %}
+    </div>
     {% endfor %}
 
 </div>
