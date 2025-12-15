@@ -75,6 +75,70 @@
                 </div>
             </div>
             
+            <!-- Landing Page Images -->
+            <div class="row g-4 mt-2">
+                <div class="col-12">
+                    <hr class="my-4">
+                    <h6 class="fw-semibold mb-3">Landing Page Images</h6>
+                </div>
+                
+                <!-- Landing Hero Image -->
+                <div class="col-md-6">
+                    <div class="card border">
+                        <div class="card-header bg-warning text-dark">
+                            <h6 class="mb-0 fw-semibold">Landing Hero Image</h6>
+                        </div>
+                        <div class="card-body">
+                            {% if settings.landing_hero_image %}
+                            <div class="mb-3">
+                                <label class="form-label">Current Image:</label>
+                                <div class="border rounded p-2 bg-light">
+                                    <img src="{{ settings.landing_hero_image.url }}" alt="Landing Hero" class="img-fluid" style="max-height: 150px;">
+                                </div>
+                            </div>
+                            {% else %}
+                            <div class="mb-3">
+                                <small class="text-muted">No image set. Will use default static image.</small>
+                            </div>
+                            {% endif %}
+                            <div class="mb-3">
+                                <label for="landing_hero_image" class="form-label">Upload New Image</label>
+                                <input type="file" class="form-control" id="landing_hero_image" name="landing_hero_image" accept="image/*">
+                                <small class="form-text text-muted">Main banner image displayed on the landing page. Recommended size: 1920x800px</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Landing Service Image -->
+                <div class="col-md-6">
+                    <div class="card border">
+                        <div class="card-header bg-success text-white">
+                            <h6 class="mb-0 fw-semibold">Landing Service Image</h6>
+                        </div>
+                        <div class="card-body">
+                            {% if settings.landing_service_image %}
+                            <div class="mb-3">
+                                <label class="form-label">Current Image:</label>
+                                <div class="border rounded p-2 bg-light">
+                                    <img src="{{ settings.landing_service_image.url }}" alt="Landing Service" class="img-fluid" style="max-height: 150px;">
+                                </div>
+                            </div>
+                            {% else %}
+                            <div class="mb-3">
+                                <small class="text-muted">No image set. Will use default static image.</small>
+                            </div>
+                            {% endif %}
+                            <div class="mb-3">
+                                <label for="landing_service_image" class="form-label">Upload New Image</label>
+                                <input type="file" class="form-control" id="landing_service_image" name="landing_service_image" accept="image/*">
+                                <small class="form-text text-muted">Service image for "Why Choose Us" section. Recommended size: 800x600px</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
             <div class="mt-4">
                 <button type="submit" class="btn btn-primary">
                     <i class="bi bi-save me-1"></i>Save Changes

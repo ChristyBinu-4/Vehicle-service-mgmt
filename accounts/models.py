@@ -288,6 +288,18 @@ class SystemSettings(models.Model):
         null=True,
         help_text="Background image for Servicer interface"
     )
+    landing_hero_image = models.ImageField(
+        upload_to='system/landing/',
+        blank=True,
+        null=True,
+        help_text="Hero image for landing page (main banner image)"
+    )
+    landing_service_image = models.ImageField(
+        upload_to='system/landing/',
+        blank=True,
+        null=True,
+        help_text="Service image for landing page (Why Choose Us section)"
+    )
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:

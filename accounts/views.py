@@ -1765,6 +1765,8 @@ def admin_settings(request):
             # Handle background image uploads
             user_bg = request.FILES.get('user_background_image')
             servicer_bg = request.FILES.get('servicer_background_image')
+            landing_hero = request.FILES.get('landing_hero_image')
+            landing_service = request.FILES.get('landing_service_image')
             
             updated = False
             
@@ -1790,9 +1792,31 @@ def admin_settings(request):
                     settings.servicer_background_image = servicer_bg
                     updated = True
             
+            if landing_hero:
+                # Validate image file
+                if not landing_hero.content_type.startswith('image/'):
+                    messages.error(request, "Landing hero image must be an image file.")
+                else:
+                    # Delete old image if exists
+                    if settings.landing_hero_image:
+                        settings.landing_hero_image.delete(save=False)
+                    settings.landing_hero_image = landing_hero
+                    updated = True
+            
+            if landing_service:
+                # Validate image file
+                if not landing_service.content_type.startswith('image/'):
+                    messages.error(request, "Landing service image must be an image file.")
+                else:
+                    # Delete old image if exists
+                    if settings.landing_service_image:
+                        settings.landing_service_image.delete(save=False)
+                    settings.landing_service_image = landing_service
+                    updated = True
+            
             if updated:
                 settings.save()
-                messages.success(request, "Background images updated successfully.")
+                messages.success(request, "Images updated successfully.")
         
         elif action == 'add_admin':
             username = request.POST.get('username', '').strip()
