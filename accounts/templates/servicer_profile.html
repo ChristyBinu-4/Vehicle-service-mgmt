@@ -48,7 +48,8 @@
     }
     /* Hide form controls in profile sections by default (for edit mode) */
     #basicInfoSection .form-control,
-    #addressInfoSection .form-control {
+    #addressInfoSection .form-control,
+    #servicerInfoSection .form-control {
         display: none;
         flex: 1;
     }
@@ -63,11 +64,13 @@
         display: flex !important;
     }
     .edit-mode #editBasicInfoBtn,
-    .edit-mode #editAddressInfoBtn {
+    .edit-mode #editAddressInfoBtn,
+    .edit-mode #editServicerInfoBtn {
         display: none !important;
     }
     #editBasicInfoBtn,
-    #editAddressInfoBtn {
+    #editAddressInfoBtn,
+    #editServicerInfoBtn {
         display: block;
     }
     /* Password section styles */
@@ -163,6 +166,13 @@
     {% if address_info_success %}
     <div class="alert alert-success alert-dismissible fade show" role="alert">
         <strong>Success!</strong> Your address information has been updated successfully.
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+    {% endif %}
+
+    {% if servicer_info_success %}
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+        <strong>Success!</strong> Your service center information has been updated successfully.
         <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
     </div>
     {% endif %}
@@ -348,21 +358,54 @@
         </form>
     </div>
 
-    <!-- Servicer-specific Information (Read-only) -->
-    <div class="profile-section">
-        <div class="profile-header">
+    <!-- Servicer-specific Information -->
+    <div class="profile-section" id="servicerInfoSection">
+        <div class="profile-header d-flex justify-content-between align-items-center">
             <h4 class="fw-bold mb-0">Service Center Information</h4>
+            <button type="button" class="btn btn-outline-primary btn-sm" id="editServicerInfoBtn">
+                <span class="material-symbols-outlined" style="font-size: 18px; vertical-align: middle;">edit</span>
+                Edit
+            </button>
         </div>
-        <div class="info-row">
-            <span class="info-label">Location:</span>
-            <span class="info-value {% if not user.location %}empty{% endif %}">{{ user.location|default:"Not provided" }}</span>
-            <small class="text-muted d-block mt-1" style="font-size: 0.85rem;">Location is set during registration and cannot be changed</small>
-        </div>
-        <div class="info-row">
-            <span class="info-label">Work Types:</span>
-            <span class="info-value {% if not user.work_types %}empty{% endif %}">{{ user.work_types|default:"Not provided" }}</span>
-            <small class="text-muted d-block mt-1" style="font-size: 0.85rem;">Type of work is set during registration and cannot be changed</small>
-        </div>
+
+        <form method="POST" id="servicerInfoForm">
+            {% csrf_token %}
+            <input type="hidden" name="update_servicer_info" value="1">
+
+            <div class="info-row">
+                <span class="info-label">Location:</span>
+                <span class="info-value {% if not user.location %}empty{% endif %}">{{ user.location|default:"Not provided" }}</span>
+                {{ servicer_info_form.location }}
+                {% if servicer_info_form.location.errors %}
+                    <div class="invalid-feedback d-block">
+                        {% for error in servicer_info_form.location.errors %}
+                            {{ error }}
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            </div>
+
+            <div class="info-row">
+                <span class="info-label">Work Types:</span>
+                <span class="info-value {% if not user.work_types %}empty{% endif %}">{{ user.work_types|default:"Not provided" }}</span>
+                {{ servicer_info_form.work_types }}
+                {% if servicer_info_form.work_types.errors %}
+                    <div class="invalid-feedback d-block">
+                        {% for error in servicer_info_form.work_types.errors %}
+                            {{ error }}
+                        {% endfor %}
+                    </div>
+                {% endif %}
+                {% if servicer_info_form.work_types.help_text %}
+                    <small class="form-text text-muted d-block mt-1">{{ servicer_info_form.work_types.help_text }}</small>
+                {% endif %}
+            </div>
+
+            <div class="d-flex gap-2 mt-3 form-actions">
+                <button type="submit" class="btn btn-primary">Save Changes</button>
+                <button type="button" class="btn btn-secondary" id="cancelServicerInfoBtn">Cancel</button>
+            </div>
+        </form>
     </div>
 
     <!-- Change Password -->
@@ -484,6 +527,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Store original values for cancel functionality
     let basicInfoOriginalValues = {};
     let addressInfoOriginalValues = {};
+    let servicerInfoOriginalValues = {};
 
     // Basic Info Edit Toggle
     const editBasicInfoBtn = document.getElementById('editBasicInfoBtn');
@@ -499,12 +543,22 @@ document.addEventListener('DOMContentLoaded', function() {
     const addressInfoSection = document.getElementById('addressInfoSection');
     const addressInfoFormActions = addressInfoForm ? addressInfoForm.querySelector('.form-actions') : null;
     
+    // Servicer Info Edit Toggle
+    const editServicerInfoBtn = document.getElementById('editServicerInfoBtn');
+    const cancelServicerInfoBtn = document.getElementById('cancelServicerInfoBtn');
+    const servicerInfoForm = document.getElementById('servicerInfoForm');
+    const servicerInfoSection = document.getElementById('servicerInfoSection');
+    const servicerInfoFormActions = servicerInfoForm ? servicerInfoForm.querySelector('.form-actions') : null;
+    
     // Ensure form actions are hidden on page load
     if (basicInfoFormActions) {
         basicInfoFormActions.style.display = 'none';
     }
     if (addressInfoFormActions) {
         addressInfoFormActions.style.display = 'none';
+    }
+    if (servicerInfoFormActions) {
+        servicerInfoFormActions.style.display = 'none';
     }
 
     function enterBasicInfoEditMode() {
@@ -613,6 +667,59 @@ document.addEventListener('DOMContentLoaded', function() {
         addressInfoOriginalValues = {};
     }
 
+    function enterServicerInfoEditMode() {
+        if (!servicerInfoSection || !servicerInfoForm) return;
+        servicerInfoSection.classList.add('edit-mode');
+        
+        // Store original values
+        servicerInfoForm.querySelectorAll('.form-control').forEach(el => {
+            if (el.name) {
+                const valueEl = el.closest('.info-row').querySelector('.info-value');
+                const originalValue = valueEl ? valueEl.textContent.trim() : '';
+                servicerInfoOriginalValues[el.name] = originalValue === '—' || originalValue === 'Not provided' ? '' : originalValue;
+                
+                // Show form control and set value
+                el.style.display = 'block';
+                if (el.value === '' && servicerInfoOriginalValues[el.name] !== '') {
+                    el.value = servicerInfoOriginalValues[el.name];
+                }
+            }
+        });
+        
+        // Ensure form actions are visible in edit mode
+        if (servicerInfoFormActions) {
+            servicerInfoFormActions.style.display = 'flex';
+        }
+    }
+
+    function exitServicerInfoEditMode() {
+        if (!servicerInfoSection || !servicerInfoForm) return;
+        servicerInfoSection.classList.remove('edit-mode');
+        
+        // Restore original values
+        servicerInfoForm.querySelectorAll('.form-control').forEach(el => {
+            if (el.name) {
+                el.style.display = 'none';
+                if (servicerInfoOriginalValues.hasOwnProperty(el.name)) {
+                    el.value = servicerInfoOriginalValues[el.name] || '';
+                }
+            }
+        });
+        
+        // Hide form actions
+        if (servicerInfoFormActions) {
+            servicerInfoFormActions.style.display = 'none';
+        }
+        
+        // Clear error messages
+        servicerInfoForm.querySelectorAll('.invalid-feedback').forEach(el => {
+            el.style.display = 'none';
+        });
+        
+        // Clear stored values
+        servicerInfoOriginalValues = {};
+    }
+
     if (editBasicInfoBtn) {
         editBasicInfoBtn.addEventListener('click', enterBasicInfoEditMode);
     }
@@ -627,6 +734,14 @@ document.addEventListener('DOMContentLoaded', function() {
 
     if (cancelAddressInfoBtn) {
         cancelAddressInfoBtn.addEventListener('click', exitAddressInfoEditMode);
+    }
+
+    if (editServicerInfoBtn) {
+        editServicerInfoBtn.addEventListener('click', enterServicerInfoEditMode);
+    }
+
+    if (cancelServicerInfoBtn) {
+        cancelServicerInfoBtn.addEventListener('click', exitServicerInfoEditMode);
     }
 
     // Password Change Toggle

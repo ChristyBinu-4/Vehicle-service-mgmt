@@ -445,6 +445,62 @@ class ServicerAddressInfoForm(forms.ModelForm):
         return instance
 
 
+class ServicerInfoForm(forms.ModelForm):
+    """
+    Form for updating servicer-specific information (Location and Work Types).
+    """
+    class Meta:
+        model = User
+        fields = ['location', 'work_types']
+    
+    def __init__(self, *args, **kwargs):
+        self.user = kwargs.pop('user', None)
+        super().__init__(*args, **kwargs)
+        
+        # Add Bootstrap classes and help text
+        self.fields['location'].widget.attrs.update({
+            'class': 'form-control',
+            'placeholder': 'Work Location'
+        })
+        self.fields['work_types'].widget.attrs.update({
+            'class': 'form-control',
+            'placeholder': 'Type of Work (comma-separated)'
+        })
+        self.fields['work_types'].help_text = 'Enter types of work you can do, separated by commas (e.g., Oil Change, Brake Repair, Tire Service)'
+
+    def save(self, commit=True):
+        """
+        Save servicer information fields to database.
+        Also updates the linked Servicer model instance.
+        """
+        instance = super().save(commit=False)
+        
+        # Explicitly set location and work_types from cleaned_data
+        if 'location' in self.cleaned_data:
+            value = self.cleaned_data['location']
+            instance.location = value if value else None
+        if 'work_types' in self.cleaned_data:
+            value = self.cleaned_data['work_types']
+            instance.work_types = value if value else None
+        
+        if commit:
+            instance.save()
+            
+            # Also update the linked Servicer model instance
+            try:
+                from .models import Servicer
+                servicer = Servicer.objects.get(email=instance.email)
+                if 'location' in self.cleaned_data:
+                    servicer.location = self.cleaned_data['location'] or ''
+                if 'work_types' in self.cleaned_data:
+                    servicer.work_type = self.cleaned_data['work_types'] or ''
+                servicer.save()
+            except Servicer.DoesNotExist:
+                pass
+        
+        return instance
+
+
 # Keep ServicerProfileUpdateForm for backward compatibility (if needed elsewhere)
 class ServicerProfileUpdateForm(ServicerBasicInfoForm):
     """

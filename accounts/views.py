@@ -13,7 +13,8 @@ from .forms import (
     UserRegisterForm, FeedbackForm, ProfileUpdateForm, PasswordChangeForm, 
     ServicerRegisterForm, ServicerProfileUpdateForm, RejectBookingForm, 
     AcceptBookingForm, DiagnosisForm, ProgressUpdateForm, CompleteWorkForm,
-    BasicInfoForm, AddressInfoForm, ServicerBasicInfoForm, ServicerAddressInfoForm
+    BasicInfoForm, AddressInfoForm, ServicerBasicInfoForm, ServicerAddressInfoForm,
+    ServicerInfoForm
 )
 from .models import User, Feedback, WorkProgress, Servicer, Booking, Diagnosis, SystemSettings
 
@@ -1490,6 +1491,7 @@ def servicer_profile(request):
     Handle servicer profile viewing and editing.
     - Display servicer profile information
     - Allow editing of basic info (first_name, last_name, email, phone, available_time) and address info separately
+    - Allow editing of servicer info (location, work_types)
     - Handle password change
     - Always fetches fresh data from database to ensure persistence
     """
@@ -1500,9 +1502,11 @@ def servicer_profile(request):
     
     basic_info_form = ServicerBasicInfoForm(instance=user, user=user)
     address_info_form = ServicerAddressInfoForm(instance=user, user=user)
+    servicer_info_form = ServicerInfoForm(instance=user, user=user)
     password_form = PasswordChangeForm(user=user)
     basic_info_success = False
     address_info_success = False
+    servicer_info_success = False
     password_success = False
     
     if request.method == "POST":
@@ -1529,6 +1533,17 @@ def servicer_profile(request):
                 # Re-instantiate form with updated data
                 address_info_form = ServicerAddressInfoForm(instance=user, user=user)
         
+        elif 'update_servicer_info' in request.POST:
+            servicer_info_form = ServicerInfoForm(request.POST, instance=user, user=user)
+            if servicer_info_form.is_valid():
+                servicer_info_form.save()
+                # Refresh user object from database to get updated data with all fields
+                user = User.objects.get(pk=request.user.pk)
+                servicer_info_success = True
+                messages.success(request, "Service center information updated successfully!")
+                # Re-instantiate form with updated data
+                servicer_info_form = ServicerInfoForm(instance=user, user=user)
+        
         elif 'change_password' in request.POST:
             password_form = PasswordChangeForm(request.POST, user=user)
             if password_form.is_valid():
@@ -1545,9 +1560,11 @@ def servicer_profile(request):
         'user': user,
         'basic_info_form': basic_info_form,
         'address_info_form': address_info_form,
+        'servicer_info_form': servicer_info_form,
         'password_form': password_form,
         'basic_info_success': basic_info_success,
         'address_info_success': address_info_success,
+        'servicer_info_success': servicer_info_success,
         'password_success': password_success,
     })
 
