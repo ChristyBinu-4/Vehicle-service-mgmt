@@ -231,6 +231,12 @@ def user_search(request):
 @login_required
 @user_role_required
 def user_work_status(request):
+    """
+    User Work Status page.
+    Shows all bookings created by the logged-in user.
+    Each booking shows: Service ID, Service center name, Work type, Status badge, View Details button.
+    """
+    # Get all bookings for the logged-in user, ordered by most recent first
     bookings = Booking.objects.filter(user=request.user).order_by("-created_at")
 
     # Prepare complaints list for each booking
@@ -247,17 +253,39 @@ def user_work_status(request):
 @login_required
 @user_role_required
 def booking_detail(request, booking_id):
-    booking = Booking.objects.get(id=booking_id, user=request.user)
+    """
+    Booking Detail page for users.
+    Shows booking details with conditional tabs:
+    - Service Log (always visible)
+    - Diagnostics (ONLY if status == "Pending" AND diagnosis exists)
+    """
+    # Get booking - ensure it belongs to the logged-in user
+    booking = get_object_or_404(Booking, id=booking_id, user=request.user)
 
-    # Work progress timeline
-    progress = WorkProgress.objects.filter(booking=booking).order_by("updated_at")
+    # Work progress timeline - ordered by updated_at (most recent first)
+    progress = WorkProgress.objects.filter(booking=booking).order_by("-updated_at")
 
     complaint_list = booking.complaints.split(" || ") if booking.complaints else []
+
+    # Check if diagnosis exists and is visible
+    # Diagnosis is visible ONLY when:
+    # 1. Booking status is "Pending"
+    # 2. Diagnosis exists
+    diagnosis_visible = False
+    diagnosis = None
+    if booking.status == "Pending":
+        try:
+            diagnosis = booking.diagnosis
+            diagnosis_visible = True
+        except Diagnosis.DoesNotExist:
+            diagnosis_visible = False
 
     return render(request, "booking_detail.html", {
         "booking": booking,
         "progress": progress,
         "complaint_list": complaint_list,
+        "diagnosis": diagnosis,
+        "diagnosis_visible": diagnosis_visible,
     })
 
 
@@ -385,21 +413,56 @@ def booking_confirm(request):
 
 @login_required
 @user_role_required
-def diagnosis_detail(request, booking_id):
+def approve_diagnosis(request, booking_id):
+    """
+    Approve diagnosis and move booking to Ongoing status.
+    
+    Validation:
+    - Booking must belong to the logged-in user
+    - Status must be "Pending"
+    - Diagnosis must exist
+    - Diagnosis must not already be approved
+    
+    On success:
+    - booking.status → "Ongoing"
+    - diagnosis.user_approved → True
+    - Redirect to booking detail with success message
+    """
+    # Get booking - ensure it belongs to the logged-in user
     booking = get_object_or_404(Booking, id=booking_id, user=request.user)
-
+    
+    # Validate booking status
     if booking.status != "Pending":
-        messages.error(request, "Diagnosis is not available yet.")
-        return redirect("user_work_status")
-
-    if not hasattr(booking, "diagnosis"):
-        messages.error(request, "Diagnosis report not submitted yet.")
-        return redirect("user_work_status")
-
-    return render(request, "diagnosis_detail.html", {
-        "booking": booking,
-        "diagnosis": booking.diagnosis
-    })
+        messages.error(request, "Diagnosis can only be approved when booking status is Pending.")
+        return redirect("booking_detail", booking_id=booking_id)
+    
+    # Validate diagnosis exists
+    try:
+        diagnosis = booking.diagnosis
+    except Diagnosis.DoesNotExist:
+        messages.error(request, "Diagnosis report not found.")
+        return redirect("booking_detail", booking_id=booking_id)
+    
+    # Prevent double approval
+    if diagnosis.user_approved:
+        messages.warning(request, "Diagnosis has already been approved.")
+        return redirect("booking_detail", booking_id=booking_id)
+    
+    # Only allow POST requests
+    if request.method == "POST":
+        # Update booking status to Ongoing
+        booking.status = "Ongoing"
+        booking.save()
+        
+        # Mark diagnosis as approved
+        diagnosis.user_approved = True
+        diagnosis.save()
+        
+        messages.success(request, "Diagnosis approved successfully! Work has started.")
+        return redirect("booking_detail", booking_id=booking_id)
+    
+    # If GET request, redirect to booking detail
+    return redirect("booking_detail", booking_id=booking_id)
 
 
 def user_logout(request):

@@ -2,6 +2,15 @@
 {% block content %}
 
 <div class="container-fluid p-4">
+    <!-- Success/Error Messages -->
+    {% if messages %}
+        {% for message in messages %}
+        <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+        {% endfor %}
+    {% endif %}
 
     <h3 class="fw-bold mb-4">Work Status</h3>
 
@@ -13,46 +22,33 @@
 
                     <!-- Header -->
                     <div class="d-flex justify-content-between align-items-center mb-2">
-                        <h5 class="fw-semibold mb-0">{{ b.servicer.name }}</h5>
+                        <div>
+                            <h5 class="fw-semibold mb-0">SRV-{{ b.id }}</h5>
+                            <small class="text-muted">Service Center: {{ b.servicer.name }}</small>
+                        </div>
 
                         <span class="badge
                             {% if b.status == 'Requested' %}bg-warning
                             {% elif b.status == 'Accepted' %}bg-info
+                            {% elif b.status == 'Pending' %}bg-secondary
                             {% elif b.status == 'Ongoing' %}bg-primary
                             {% elif b.status == 'Completed' %}bg-success
                             {% else %}bg-danger{% endif %}
                         ">
-                            {{ b.status }}
+                            {{ b.get_status_display }}
                         </span>
                     </div>
 
                     <!-- Details -->
-                    <p class="mb-1"><strong>Vehicle:</strong> {{ b.vehicle_make }} {{ b.vehicle_model }}</p>
                     <p class="mb-1"><strong>Work Type:</strong> {{ b.work_type }}</p>
-                    <p class="mb-1"><strong>Preferred Date:</strong> {{ b.preferred_date }}</p>
-
-                    <!-- Complaints -->
-                    <p class="mb-2"><strong>Complaints:</strong></p>
-                    <ul class="small text-muted">
-                        {% for c in b.complaint_list %}
-                            <li>{{ c }}</li>
-                        {% empty %}
-                            <li class="text-muted">No complaints</li>
-                        {% endfor %}
-                    </ul>
-
+                    <p class="mb-1"><strong>Vehicle:</strong> {{ b.vehicle_make }} {{ b.vehicle_model }} ({{ b.vehicle_number }})</p>
+                    <p class="mb-1"><strong>Preferred Date:</strong> {{ b.preferred_date|date:"M d, Y" }}</p>
 
                     <!-- Footer -->
                     <div class="d-flex justify-content-end gap-2 mt-3">
-                        <a href="{% url 'booking_detail' b.id %}" class="btn btn-sm btn-outline-secondary">
+                        <a href="{% url 'booking_detail' b.id %}" class="btn btn-sm btn-primary">
                             View Details
                         </a>
-
-                        {% if b.status == "Completed" %}
-                            <a href="{% url 'user_payment' b.id %}" class="btn btn-sm btn-success">
-                                Proceed to Payment
-                            </a>
-                        {% endif %}
                     </div>
 
                 </div>

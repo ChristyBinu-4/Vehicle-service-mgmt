@@ -14,6 +14,7 @@ urlpatterns = [
     path("book-service/<int:servicer_id>/", views.book_service, name="book_service"),
     path("booking-confirm/", views.booking_confirm, name="booking_confirm"),
     path("booking/<int:booking_id>/", views.booking_detail, name="booking_detail"),
+    path("booking/<int:booking_id>/approve-diagnosis/", views.approve_diagnosis, name="approve_diagnosis"),
     
     # Servicer authentication routes
     path('servicer/login/', views.servicer_login, name='servicer_login'),

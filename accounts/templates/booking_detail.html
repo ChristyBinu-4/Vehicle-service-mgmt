@@ -2,6 +2,15 @@
 {% block content %}
 
 <div class="container-fluid p-4">
+    <!-- Success/Error Messages -->
+    {% if messages %}
+        {% for message in messages %}
+        <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+        {% endfor %}
+    {% endif %}
 
     <!-- Breadcrumb -->
     <nav class="mb-3 text-muted">
@@ -10,11 +19,9 @@
 
         
     <div class="d-flex justify-content-between align-items-center mb-4">
-
         <div>
-            <!-- 🔙 Back Button -->
-            <a href="{% url 'user_work_status' %}"
-              class="btn btn-outline-secondary btn-sm mb-2">
+            <!-- Back Button -->
+            <a href="{% url 'user_work_status' %}" class="btn btn-outline-secondary btn-sm mb-2">
                 ← Back to Work Status
             </a>
 
@@ -25,23 +32,14 @@
             <span class="badge
                 {% if booking.status == 'Requested' %}bg-warning
                 {% elif booking.status == 'Accepted' %}bg-info
+                {% elif booking.status == 'Pending' %}bg-secondary
                 {% elif booking.status == 'Ongoing' %}bg-primary
                 {% elif booking.status == 'Completed' %}bg-success
                 {% else %}bg-danger{% endif %}
             ">
-                {{ booking.status }}
+                {{ booking.get_status_display }}
             </span>
-
-            {% if booking.status == "Pending" and booking.diagnosis %}
-                <div class="mt-2">
-                    <a href="{% url 'diagnosis_detail' booking.id %}"
-                      class="btn btn-outline-primary btn-sm">
-                        View Diagnosis Report
-                    </a>
-                </div>
-            {% endif %}
         </div>
-
     </div>
 
     <div class="row g-4">
@@ -58,13 +56,14 @@
                 <p>Number: {{ booking.vehicle_number }}</p>
             </div>
 
-            <!-- Servicer Card -->
+            <!-- Service Center Card -->
             <div class="bg-white p-4 rounded shadow-sm mb-4">
                 <h6 class="fw-semibold mb-2">Service Center</h6>
                 <p class="fw-bold">{{ booking.servicer.name }}</p>
                 <p class="text-muted">{{ booking.servicer.location }}</p>
                 <p>⭐ {{ booking.servicer.rating }}</p>
                 <p>{{ booking.servicer.available_time }}</p>
+                <p class="text-muted small mt-2"><strong>Work Type:</strong> {{ booking.work_type }}</p>
             </div>
 
         </div>
@@ -88,7 +87,10 @@
                 </li>
 
                 <!-- Diagnostics Tab (ONLY WHEN AVAILABLE) -->
-                {% if booking.status == "Pending" and booking.diagnosis %}
+                <!-- Diagnosis is visible ONLY when:
+                     1. Booking status is "Pending"
+                     2. Diagnosis exists -->
+                {% if diagnosis_visible and diagnosis %}
                 <li class="nav-item" role="presentation">
                     <button class="nav-link"
                             id="diagnostics-tab"
@@ -111,46 +113,97 @@
          role="tabpanel">
 
         <div class="bg-white p-4 rounded shadow-sm">
-                  {% if progress %}
-                      {% for p in progress %}
-                          <div class="border-start ps-3 mb-3">
-                              <p class="fw-semibold mb-1">{{ p.title }}</p>
-                              <small class="text-muted">
-                                  {{ p.updated_at|date:"M d, Y h:i A" }}
-                              </small>
-                              <p class="mt-1">{{ p.description }}</p>
-                          </div>
-                      {% endfor %}
-                  {% else %}
-                      <p class="text-muted">No progress updates yet.</p>
-                  {% endif %}
-              </div>
+            <h6 class="fw-semibold mb-3">Work Progress Timeline</h6>
+            {% if progress %}
+                {% for p in progress %}
+                    <div class="border-start border-primary border-3 ps-3 mb-4">
+                        <div class="d-flex justify-content-between align-items-start mb-2">
+                            <h6 class="fw-semibold mb-0">{{ p.title }}</h6>
+                            <span class="badge 
+                                {% if p.status == 'Pending' %}bg-secondary
+                                {% elif p.status == 'In Progress' %}bg-primary
+                                {% elif p.status == 'Completed' %}bg-success
+                                {% endif %}
+                            ">
+                                {{ p.get_status_display }}
+                            </span>
+                        </div>
+                        <p class="mb-2">{{ p.description }}</p>
+                        <small class="text-muted">
+                            <span class="material-symbols-outlined" style="font-size: 14px; vertical-align: middle;">schedule</span>
+                            {{ p.updated_at|date:"M d, Y h:i A" }}
+                        </small>
+                    </div>
+                {% endfor %}
+            {% else %}
+                <div class="text-center py-4">
+                    <p class="text-muted mb-0">No progress updates yet.</p>
+                    <small class="text-muted">Progress updates will appear here as work progresses.</small>
+                </div>
+            {% endif %}
+        </div>
 
           </div>
 
           <!-- Diagnostics Content (ONLY WHEN AVAILABLE) -->
-          {% if booking.status == "Pending" and booking.diagnosis %}
+          <!-- Diagnosis tab is visible ONLY when:
+               1. Booking status is "Pending"
+               2. Diagnosis exists -->
+          {% if diagnosis_visible and diagnosis %}
           <div class="tab-pane fade"
               id="diagnostics"
               role="tabpanel">
 
               <div class="bg-white p-4 rounded shadow-sm">
-                  <h6 class="fw-semibold mb-2">Diagnosis Report</h6>
+                  <h6 class="fw-semibold mb-3">Diagnosis Report</h6>
 
-                  <p class="mb-2">
-                      <strong>Estimated Cost:</strong>
-                      ₹{{ booking.diagnosis.estimated_cost }}
-                  </p>
+                  <!-- Diagnosis Description -->
+                  <div class="mb-3">
+                      <strong>Diagnosis:</strong>
+                      <p class="mt-2">{{ diagnosis.report }}</p>
+                  </div>
 
-                  <p>{{ booking.diagnosis.report }}</p>
+                  <!-- Work Items -->
+                  {% if diagnosis.work_items %}
+                  <div class="mb-3">
+                      <strong>Work Items:</strong>
+                      <ul class="mt-2">
+                          {% for item in diagnosis.get_work_items_list %}
+                          <li>{{ item }}</li>
+                          {% endfor %}
+                      </ul>
+                  </div>
+                  {% endif %}
 
-                  <!-- Confirm Button -->
-                  <form method="POST" action="{% url 'confirm_diagnosis' booking.id %}">
+                  <!-- Estimated Cost -->
+                  {% if diagnosis.estimated_cost %}
+                  <div class="mb-3">
+                      <strong>Estimated Cost:</strong> ₹{{ diagnosis.estimated_cost }}
+                  </div>
+                  {% endif %}
+
+                  <!-- Estimated Completion Time -->
+                  {% if diagnosis.estimated_completion_time %}
+                  <div class="mb-3">
+                      <strong>Estimated Completion Time:</strong> {{ diagnosis.estimated_completion_time }}
+                  </div>
+                  {% endif %}
+
+                  <!-- Approve Diagnosis Button -->
+                  <!-- Only show if diagnosis is not already approved -->
+                  {% if not diagnosis.user_approved %}
+                  <form method="POST" action="{% url 'approve_diagnosis' booking.id %}" class="mt-4">
                       {% csrf_token %}
-                      <button class="btn btn-success mt-3">
-                          Confirm & Proceed
+                      <button type="submit" class="btn btn-success">
+                          Approve Diagnosis
                       </button>
                   </form>
+                  {% else %}
+                  <div class="alert alert-success mt-3">
+                      <strong>✓ Diagnosis Approved</strong>
+                      <p class="mb-0">Work has started. You can track progress in the Service Log tab.</p>
+                  </div>
+                  {% endif %}
               </div>
 
           </div>
@@ -160,6 +213,7 @@
 
 
             <!-- Complaints -->
+            {% if complaint_list %}
             <div class="bg-white p-4 rounded shadow-sm mt-4">
                 <h6 class="fw-semibold mb-2">Reported Issues</h6>
                 <ul>
@@ -168,6 +222,7 @@
                     {% endfor %}
                 </ul>
             </div>
+            {% endif %}
 
         </div>
 
