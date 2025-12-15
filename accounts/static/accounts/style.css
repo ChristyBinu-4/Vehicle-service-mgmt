@@ -49,3 +49,61 @@
     color: #dc3545;     /* red */
 }
 
+/* Password Toggle Eye Icon Styles */
+.password-toggle-wrapper {
+    width: 100%;
+}
+
+.password-toggle-icon {
+    cursor: pointer;
+    color: #6c757d;
+    background: white;
+    border: none;
+    outline: none;
+    padding: 0;
+    width: 20px;
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10;
+    transition: color 0.2s ease;
+    line-height: 1;
+}
+
+.password-toggle-icon:hover {
+    color: #495057;
+}
+
+.password-toggle-icon:focus {
+    outline: none;
+    color: #495057;
+}
+
+.password-toggle-icon:active {
+    outline: none;
+}
+
+.password-toggle-icon i {
+    font-size: 18px;
+    line-height: 1;
+    display: block;
+}
+
+.password-toggle-icon svg {
+    width: 18px;
+    height: 18px;
+    fill: currentColor;
+}
+
+/* Ensure password input has padding on the right for the icon */
+.password-toggle-wrapper input[type="password"],
+.password-toggle-wrapper input[type="text"] {
+    padding-right: 45px !important;
+}
+
+/* For Django form fields, add padding if pe-5 class is not present */
+.password-toggle-wrapper .form-control:not(.pe-5) {
+    padding-right: 45px !important;
+}
+

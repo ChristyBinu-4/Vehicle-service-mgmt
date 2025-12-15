@@ -1,0 +1,124 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>carvanta.in</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+ 
+  <style>
+    body {
+      font-family: 'Poppins', sans-serif;
+      scroll-behavior: smooth;
+      padding-top: 80px;
+    }
+    .navbar {
+      background-color: #000;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+    }
+    .navbar-brand,
+    .nav-link {
+      color: #fff !important;
+      font-weight: 500;
+    }
+    .nav-link:hover {
+      color: #f1c40f !important;
+    }
+    footer {
+      background-color: #000;
+      color: #fff;
+      padding: 40px 0 20px;
+    }
+    footer a:hover {
+      color: #f1c40f !important;
+    }
+    .social-icons a:hover {
+      transform: scale(1.2);
+    }
+</style>
+</head>
+ 
+<body>
+ 
+<!-- NAVBAR -->
+<nav class="navbar navbar-expand-lg navbar-dark fixed-top py-3">
+<div class="container">
+<a class="navbar-brand fw-bold" href="{% url 'home' %}">CARVANTA</a>
+ 
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+<span class="navbar-toggler-icon"></span>
+</button>
+ 
+    <div class="collapse navbar-collapse justify-content-end" id="navbarNav">
+<ul class="navbar-nav text-center align-items-center">
+ 
+        <li class="nav-item">
+<a class="nav-link" href="{% url 'home' %}">Home</a>
+</li>
+ 
+        <li class="nav-item">
+<a class="nav-link" href="{% url 'about_us' %}">About Us</a>
+</li>
+ 
+        {% if not user.is_authenticated %}
+<li class="nav-item">
+<a class="nav-link" href="{% url 'login_page' %}">User Login</a>
+</li>
+ 
+          <li class="nav-item">
+<a class="nav-link" href="{% url 'servicer_login' %}">Servicer Login</a>
+</li>
+        {% endif %}
+ 
+      </ul>
+</div>
+</div>
+</nav>
+ 
+<main>
+  {% block content %}
+  {% endblock %}
+</main>
+ 
+<footer id="contact">
+<div class="container">
+<div class="row gy-4 align-items-start">
+<div class="col-md-6">
+<h5 class="fw-bold text-warning">OUR MISSION</h5>
+<p>
+          To deliver world-class car repair and maintenance services with uncompromising quality,
+          ensuring complete customer satisfaction and the highest standards of vehicle safety.
+</p>
+</div>
+<div class="col-md-6 text-md-end">
+<h5 class="fw-bold text-warning">CONTACT INFO</h5>
+<p><i class="bi bi-geo-alt-fill me-2"></i>123 Main Street, Kochi, India</p>
+<p><i class="bi bi-telephone-outbound me-2"></i>+91 9876543210</p>
+<p><i class="bi bi-envelope-paper me-2"></i>cvmss@rvsltd.in</p>
+ 
+        <div class="social-icons mt-3">
+<a href="#" class="text-light me-3 fs-5"><i class="bi bi-facebook"></i></a>
+<a href="#" class="text-light me-3 fs-5"><i class="bi bi-instagram"></i></a>
+<a href="#" class="text-light me-3 fs-5"><i class="bi bi-twitter-x"></i></a>
+<a href="#" class="text-light me-3 fs-5"><i class="bi bi-linkedin"></i></a>
+<a href="#" class="text-light fs-5"><i class="bi bi-youtube"></i></a>
+</div>
+</div>
+</div>
+ 
+    <hr class="border-secondary">
+ 
+    <div class="text-center mt-3">
+      © 2025 <strong>CARVANTA</strong> | Developed by
+<a href="https://www.linkedin.com/in/mrinal-m-prasad" class="text-white text-decoration-none">
+<strong>Mrinal M Prasad</strong>
+</a>
+</div>
+</div>
+</footer>
+ 
+</body>
+</html>

@@ -89,14 +89,13 @@ class UserRegisterForm(UserCreationForm):
         return user
 
 
-class ProfileUpdateForm(forms.ModelForm):
+class BasicInfoForm(forms.ModelForm):
     """
-    Form for updating user profile information.
-    Includes all personal information fields including address fields.
+    Form for updating basic user information (First Name to Phone Number).
     """
     class Meta:
         model = User
-        fields = ['first_name', 'last_name', 'email', 'phone', 'address', 'city', 'state', 'pincode']
+        fields = ['first_name', 'last_name', 'email', 'phone']
     
     def __init__(self, *args, **kwargs):
         self.user = kwargs.pop('user', None)
@@ -118,19 +117,23 @@ class ProfileUpdateForm(forms.ModelForm):
 
     def save(self, commit=True):
         """
-        Save profile with all personal information fields.
+        Save basic information fields to database.
         """
         instance = super().save(commit=False)
         # Ensure email is not changed
         if self.instance and self.instance.pk:
             instance.email = self.instance.email
-            # Keep old values if cleared
-            if not instance.first_name:
-                instance.first_name = self.instance.first_name or ''
-            if not instance.last_name:
-                instance.last_name = self.instance.last_name or ''
-            if not instance.phone:
-                instance.phone = self.instance.phone
+        
+        # Set name fields
+        for field_name in ['first_name', 'last_name']:
+            if field_name in self.cleaned_data:
+                setattr(instance, field_name, self.cleaned_data[field_name] or '')
+        
+        # Phone is required, so keep existing if not provided
+        if 'phone' in self.cleaned_data and self.cleaned_data['phone']:
+            instance.phone = self.cleaned_data['phone']
+        elif not instance.phone and self.instance and self.instance.pk:
+            instance.phone = self.instance.phone
         
         if commit:
             instance.save()
@@ -141,6 +144,50 @@ class ProfileUpdateForm(forms.ModelForm):
         if phone and (not phone.isdigit() or len(phone) != 10):
             raise ValidationError("Phone number must be exactly 10 digits.")
         return phone
+
+
+class AddressInfoForm(forms.ModelForm):
+    """
+    Form for updating address information (Address to Pincode).
+    """
+    class Meta:
+        model = User
+        fields = ['address', 'city', 'state', 'pincode']
+    
+    def __init__(self, *args, **kwargs):
+        self.user = kwargs.pop('user', None)
+        super().__init__(*args, **kwargs)
+        
+        # Add Bootstrap classes
+        for field in self.fields:
+            self.fields[field].widget.attrs.update({'class': 'form-control'})
+
+    def save(self, commit=True):
+        """
+        Save address fields to database.
+        """
+        instance = super().save(commit=False)
+        
+        # Explicitly set all address fields from cleaned_data to ensure they are saved to database
+        # Convert empty strings to None for nullable fields to ensure proper database storage
+        for field_name in ['address', 'city', 'state', 'pincode']:
+            if field_name in self.cleaned_data:
+                value = self.cleaned_data[field_name]
+                # Convert empty string to None for nullable fields
+                setattr(instance, field_name, value if value else None)
+        
+        if commit:
+            instance.save()
+        return instance
+
+
+# Keep ProfileUpdateForm for backward compatibility (if needed elsewhere)
+class ProfileUpdateForm(BasicInfoForm):
+    """
+    Legacy form - kept for backward compatibility.
+    Use BasicInfoForm and AddressInfoForm instead.
+    """
+    pass
 
 
 class PasswordChangeForm(forms.Form):
@@ -206,11 +253,22 @@ class ServicerRegisterForm(UserCreationForm):
         required=True,
         widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Phone Number', 'maxlength': '10'})
     )
+    location = forms.CharField(
+        max_length=100,
+        required=True,
+        widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Work Location'})
+    )
+    work_types = forms.CharField(
+        max_length=200,
+        required=True,
+        widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Type of Work (comma-separated)'}),
+        help_text='Enter types of work you can do, separated by commas (e.g., Oil Change, Brake Repair, Tire Service)'
+    )
 
     class Meta:
         model = User
         fields = [
-            'username', 'service_center_name', 'email', 'phone',
+            'username', 'service_center_name', 'email', 'phone', 'location', 'work_types',
             'password1', 'password2'
         ]
 
@@ -252,16 +310,22 @@ class ServicerRegisterForm(UserCreationForm):
         user.phone = self.cleaned_data.get('phone', '')
         # Set first_name to service_center_name for servicer
         user.first_name = self.cleaned_data.get('service_center_name', '')
+        # Set location from cleaned_data
+        user.location = self.cleaned_data.get('location', '')
+        # Set work_types from cleaned_data
+        user.work_types = self.cleaned_data.get('work_types', '')
         
         if commit:
             user.save()
             self.save_m2m()
             # Create Servicer model instance linked to this user
             from .models import Servicer
+            location_value = self.cleaned_data.get('location', '')
+            work_types_value = self.cleaned_data.get('work_types', '')
             Servicer.objects.create(
                 name=self.cleaned_data.get('service_center_name', ''),
-                work_type='',
-                location='',
+                work_type=work_types_value,
+                location=location_value,
                 phone=self.cleaned_data.get('phone', ''),
                 email=user.email,
                 available_time='9:00 AM - 6:00 PM',
@@ -271,19 +335,13 @@ class ServicerRegisterForm(UserCreationForm):
         return user
 
 
-class ServicerProfileUpdateForm(forms.ModelForm):
+class ServicerBasicInfoForm(forms.ModelForm):
     """
-    Form for updating servicer profile information.
-    Includes all personal information fields including address and servicer-specific fields.
-    Also updates the linked Servicer model instance.
+    Form for updating basic servicer information (Owner Name to Phone Number).
     """
     class Meta:
         model = User
-        fields = [
-            'first_name', 'last_name', 'email', 'phone',
-            'address', 'city', 'state', 'pincode',
-            'location', 'work_types', 'available_time'
-        ]
+        fields = ['first_name', 'last_name', 'email', 'phone', 'available_time']
     
     def __init__(self, *args, **kwargs):
         self.user = kwargs.pop('user', None)
@@ -302,37 +360,34 @@ class ServicerProfileUpdateForm(forms.ModelForm):
         for field in self.fields:
             if field != 'email':
                 self.fields[field].widget.attrs.update({'class': 'form-control'})
-        
-        # Pre-populate fields with current user data
-        if self.instance and self.instance.pk:
-            self.fields['first_name'].initial = self.instance.first_name
-            self.fields['last_name'].initial = self.instance.last_name
-            self.fields['email'].initial = self.instance.email
-            self.fields['phone'].initial = self.instance.phone
-            self.fields['address'].initial = self.instance.address or ''
-            self.fields['city'].initial = self.instance.city or ''
-            self.fields['state'].initial = self.instance.state or ''
-            self.fields['pincode'].initial = self.instance.pincode or ''
-            self.fields['location'].initial = self.instance.location or ''
-            self.fields['work_types'].initial = self.instance.work_types or ''
-            self.fields['available_time'].initial = self.instance.available_time or '9:00 AM - 6:00 PM'
 
     def save(self, commit=True):
         """
-        Save servicer profile with all personal information fields.
+        Save basic servicer information fields to database.
         Also updates the linked Servicer model instance.
         """
         instance = super().save(commit=False)
         # Ensure email is not changed
         if self.instance and self.instance.pk:
             instance.email = self.instance.email
-            # Keep old values if cleared
-            if not instance.first_name:
-                instance.first_name = self.instance.first_name or ''
-            if not instance.last_name:
-                instance.last_name = self.instance.last_name or ''
-            if not instance.phone:
-                instance.phone = self.instance.phone
+        
+        # Set name fields
+        for field_name in ['first_name', 'last_name']:
+            if field_name in self.cleaned_data:
+                setattr(instance, field_name, self.cleaned_data[field_name] or '')
+        
+        # Phone is required, so keep existing if not provided
+        if 'phone' in self.cleaned_data and self.cleaned_data['phone']:
+            instance.phone = self.cleaned_data['phone']
+        elif not instance.phone and self.instance and self.instance.pk:
+            instance.phone = self.instance.phone
+        
+        # Set available_time
+        if 'available_time' in self.cleaned_data:
+            value = self.cleaned_data['available_time']
+            instance.available_time = value if value else '9:00 AM - 6:00 PM'
+        elif not instance.available_time:
+            instance.available_time = '9:00 AM - 6:00 PM'
         
         if commit:
             instance.save()
@@ -341,22 +396,62 @@ class ServicerProfileUpdateForm(forms.ModelForm):
             try:
                 from .models import Servicer
                 servicer = Servicer.objects.get(email=instance.email)
-                # Update servicer fields from user fields
-                servicer.location = instance.location or ''
-                servicer.work_type = instance.work_types or ''
                 servicer.available_time = instance.available_time or '9:00 AM - 6:00 PM'
                 servicer.save()
             except Servicer.DoesNotExist:
-                # Servicer instance doesn't exist, skip update
                 pass
         
         return instance
-
+    
     def clean_phone(self):
         phone = self.cleaned_data.get('phone')
         if phone and (not phone.isdigit() or len(phone) != 10):
             raise ValidationError("Phone number must be exactly 10 digits.")
         return phone
+
+
+class ServicerAddressInfoForm(forms.ModelForm):
+    """
+    Form for updating servicer address information (Address to Pincode).
+    """
+    class Meta:
+        model = User
+        fields = ['address', 'city', 'state', 'pincode']
+    
+    def __init__(self, *args, **kwargs):
+        self.user = kwargs.pop('user', None)
+        super().__init__(*args, **kwargs)
+        
+        # Add Bootstrap classes
+        for field in self.fields:
+            self.fields[field].widget.attrs.update({'class': 'form-control'})
+
+    def save(self, commit=True):
+        """
+        Save address fields to database.
+        """
+        instance = super().save(commit=False)
+        
+        # Explicitly set all address fields from cleaned_data to ensure they are saved to database
+        # Convert empty strings to None for nullable fields to ensure proper database storage
+        for field_name in ['address', 'city', 'state', 'pincode']:
+            if field_name in self.cleaned_data:
+                value = self.cleaned_data[field_name]
+                # Convert empty string to None for nullable fields
+                setattr(instance, field_name, value if value else None)
+        
+        if commit:
+            instance.save()
+        return instance
+
+
+# Keep ServicerProfileUpdateForm for backward compatibility (if needed elsewhere)
+class ServicerProfileUpdateForm(ServicerBasicInfoForm):
+    """
+    Legacy form - kept for backward compatibility.
+    Use ServicerBasicInfoForm and ServicerAddressInfoForm instead.
+    """
+    pass
 
 
 class FeedbackForm(forms.ModelForm):

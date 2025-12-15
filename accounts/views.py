@@ -12,9 +12,10 @@ from functools import wraps
 from .forms import (
     UserRegisterForm, FeedbackForm, ProfileUpdateForm, PasswordChangeForm, 
     ServicerRegisterForm, ServicerProfileUpdateForm, RejectBookingForm, 
-    AcceptBookingForm, DiagnosisForm, ProgressUpdateForm, CompleteWorkForm
+    AcceptBookingForm, DiagnosisForm, ProgressUpdateForm, CompleteWorkForm,
+    BasicInfoForm, AddressInfoForm, ServicerBasicInfoForm, ServicerAddressInfoForm
 )
-from .models import Feedback, WorkProgress, Servicer, Booking, Diagnosis, SystemSettings
+from .models import User, Feedback, WorkProgress, Servicer, Booking, Diagnosis, SystemSettings
 
 
 def user_role_required(view_func):
@@ -89,6 +90,19 @@ def admin_role_required(view_func):
     return wrapper
 
 
+def home(request):
+    """
+    Landing page for the application.
+    Shows login options for users and servicers.
+    """
+    return render(request, "accounts/home.html")
+
+
+def about_us(request):
+    """
+    About Us page.
+    """
+    return render(request, "accounts/about_us.html")
 
 
 def login_page(request):
@@ -513,31 +527,45 @@ def user_profile(request):
     """
     Handle user profile viewing and editing.
     - Display user profile information
-    - Allow editing of first_name, last_name, email, phone, address fields
+    - Allow editing of basic info (first_name, last_name, email, phone) and address info separately
     - Handle password change
     - Always fetches fresh data from database to ensure persistence
     """
-    # Always refresh user from database to get latest data
-    user = request.user
-    user.refresh_from_db()
+    # Always refresh user from database to get latest data with all fields
+    # Explicitly retrieve user with all personal information fields from database
+    user = User.objects.get(pk=request.user.pk)
+    # This ensures all fields including address, city, state, pincode are loaded from database
     
-    profile_form = ProfileUpdateForm(instance=user, user=user)
+    basic_info_form = BasicInfoForm(instance=user, user=user)
+    address_info_form = AddressInfoForm(instance=user, user=user)
     password_form = PasswordChangeForm(user=user)
-    profile_success = False
+    basic_info_success = False
+    address_info_success = False
     password_success = False
     
     if request.method == "POST":
         # Check which form was submitted
-        if 'update_profile' in request.POST:
-            profile_form = ProfileUpdateForm(request.POST, instance=user, user=user)
-            if profile_form.is_valid():
-                saved_user = profile_form.save()
-                # Refresh user object from database to get updated data
-                user.refresh_from_db()
-                profile_success = True
-                messages.success(request, "Profile updated successfully!")
+        if 'update_basic_info' in request.POST:
+            basic_info_form = BasicInfoForm(request.POST, instance=user, user=user)
+            if basic_info_form.is_valid():
+                basic_info_form.save()
+                # Refresh user object from database to get updated data with all fields
+                user = User.objects.get(pk=request.user.pk)
+                basic_info_success = True
+                messages.success(request, "Basic information updated successfully!")
                 # Re-instantiate form with updated data
-                profile_form = ProfileUpdateForm(instance=user, user=user)
+                basic_info_form = BasicInfoForm(instance=user, user=user)
+        
+        elif 'update_address_info' in request.POST:
+            address_info_form = AddressInfoForm(request.POST, instance=user, user=user)
+            if address_info_form.is_valid():
+                address_info_form.save()
+                # Refresh user object from database to get updated data with all fields
+                user = User.objects.get(pk=request.user.pk)
+                address_info_success = True
+                messages.success(request, "Address information updated successfully!")
+                # Re-instantiate form with updated data
+                address_info_form = AddressInfoForm(instance=user, user=user)
         
         elif 'change_password' in request.POST:
             password_form = PasswordChangeForm(request.POST, user=user)
@@ -553,9 +581,11 @@ def user_profile(request):
     # Always pass fresh user data from database
     return render(request, "user_profile.html", {
         'user': user,
-        'profile_form': profile_form,
+        'basic_info_form': basic_info_form,
+        'address_info_form': address_info_form,
         'password_form': password_form,
-        'profile_success': profile_success,
+        'basic_info_success': basic_info_success,
+        'address_info_success': address_info_success,
         'password_success': password_success,
     })
 
@@ -1459,31 +1489,45 @@ def servicer_profile(request):
     """
     Handle servicer profile viewing and editing.
     - Display servicer profile information
-    - Allow editing of personal info and servicer-specific fields
+    - Allow editing of basic info (first_name, last_name, email, phone, available_time) and address info separately
     - Handle password change
     - Always fetches fresh data from database to ensure persistence
     """
-    # Always refresh user from database to get latest data
-    user = request.user
-    user.refresh_from_db()
+    # Always refresh user from database to get latest data with all fields
+    # Explicitly retrieve user with all personal information and servicer-specific fields from database
+    user = User.objects.get(pk=request.user.pk)
+    # This ensures all fields including address, city, state, pincode, location, work_types, available_time are loaded from database
     
-    profile_form = ServicerProfileUpdateForm(instance=user, user=user)
+    basic_info_form = ServicerBasicInfoForm(instance=user, user=user)
+    address_info_form = ServicerAddressInfoForm(instance=user, user=user)
     password_form = PasswordChangeForm(user=user)
-    profile_success = False
+    basic_info_success = False
+    address_info_success = False
     password_success = False
     
     if request.method == "POST":
         # Check which form was submitted
-        if 'update_profile' in request.POST:
-            profile_form = ServicerProfileUpdateForm(request.POST, instance=user, user=user)
-            if profile_form.is_valid():
-                saved_user = profile_form.save()
-                # Refresh user object from database to get updated data
-                user.refresh_from_db()
-                profile_success = True
-                messages.success(request, "Profile updated successfully!")
+        if 'update_basic_info' in request.POST:
+            basic_info_form = ServicerBasicInfoForm(request.POST, instance=user, user=user)
+            if basic_info_form.is_valid():
+                basic_info_form.save()
+                # Refresh user object from database to get updated data with all fields
+                user = User.objects.get(pk=request.user.pk)
+                basic_info_success = True
+                messages.success(request, "Basic information updated successfully!")
                 # Re-instantiate form with updated data
-                profile_form = ServicerProfileUpdateForm(instance=user, user=user)
+                basic_info_form = ServicerBasicInfoForm(instance=user, user=user)
+        
+        elif 'update_address_info' in request.POST:
+            address_info_form = ServicerAddressInfoForm(request.POST, instance=user, user=user)
+            if address_info_form.is_valid():
+                address_info_form.save()
+                # Refresh user object from database to get updated data with all fields
+                user = User.objects.get(pk=request.user.pk)
+                address_info_success = True
+                messages.success(request, "Address information updated successfully!")
+                # Re-instantiate form with updated data
+                address_info_form = ServicerAddressInfoForm(instance=user, user=user)
         
         elif 'change_password' in request.POST:
             password_form = PasswordChangeForm(request.POST, user=user)
@@ -1499,9 +1543,11 @@ def servicer_profile(request):
     # Always pass fresh user data from database
     return render(request, "servicer_profile.html", {
         'user': user,
-        'profile_form': profile_form,
+        'basic_info_form': basic_info_form,
+        'address_info_form': address_info_form,
         'password_form': password_form,
-        'profile_success': profile_success,
+        'basic_info_success': basic_info_success,
+        'address_info_success': address_info_success,
         'password_success': password_success,
     })
 
@@ -1572,8 +1618,6 @@ def admin_home(request):
     - Completed Services
     - Total Revenue (Paid payments only)
     """
-    from .models import User
-    
     # Calculate analytics
     total_users = User.objects.filter(role='USER').count()
     total_servicers = User.objects.filter(role='SERVICER').count()
@@ -1617,8 +1661,6 @@ def admin_customers(request):
     - View user details (read-only)
     - Disable / Enable user account
     """
-    from .models import User
-    
     # Handle enable/disable action
     if request.method == "POST":
         user_id = request.POST.get('user_id')
@@ -1656,8 +1698,6 @@ def admin_servicers(request):
     - View servicer profile (read-only)
     - Enable / Disable servicer account
     """
-    from .models import User
-    
     # Handle enable/disable action
     if request.method == "POST":
         user_id = request.POST.get('user_id')
@@ -1714,8 +1754,6 @@ def admin_settings(request):
     - Update background images (User and Servicer interfaces)
     - Add additional admin users
     """
-    from .models import User
-    
     # Get or create SystemSettings instance (singleton)
     settings = SystemSettings.get_settings()
     
@@ -1832,8 +1870,13 @@ def admin_payments(request):
 def admin_feedback(request):
     """
     Admin feedback monitoring page.
-    Admin can view all feedback (read-only).
+    Admin can view all feedback and clear all feedbacks.
     """
+    if request.method == "POST" and 'clear_feedbacks' in request.POST:
+        Feedback.objects.all().delete()
+        messages.success(request, "All feedbacks cleared successfully!")
+        return redirect("admin_feedback")
+    
     feedbacks = Feedback.objects.select_related('user', 'servicer', 'booking').order_by('-created_at')
     
     return render(request, "admin_feedback.html", {

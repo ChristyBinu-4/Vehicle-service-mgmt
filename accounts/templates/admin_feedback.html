@@ -12,9 +12,18 @@
         {% endfor %}
     {% endif %}
 
-    <header class="mb-4">
-        <h2 class="fw-bold">Feedback Monitoring</h2>
-        <p class="text-muted">View all feedback in the system (read-only)</p>
+    <header class="mb-4 d-flex justify-content-between align-items-center">
+        <div>
+            <h2 class="fw-bold">Feedback Monitoring</h2>
+            <p class="text-muted">View all feedback in the system</p>
+        </div>
+        <form method="POST" class="d-inline">
+            {% csrf_token %}
+            <input type="hidden" name="clear_feedbacks" value="1">
+            <button type="submit" class="btn btn-danger" onclick="return confirm('Are you sure you want to clear all feedbacks? This action cannot be undone.')">
+                <i class="bi bi-trash"></i> Clear All Feedbacks
+            </button>
+        </form>
     </header>
 
     <!-- Feedback List -->

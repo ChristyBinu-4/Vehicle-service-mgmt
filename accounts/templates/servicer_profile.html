@@ -46,8 +46,9 @@
     .edit-mode .form-control {
         display: block !important;
     }
-    /* Hide form controls in profile section by default (for edit mode) */
-    #profileSection .form-control {
+    /* Hide form controls in profile sections by default (for edit mode) */
+    #basicInfoSection .form-control,
+    #addressInfoSection .form-control {
         display: none;
         flex: 1;
     }
@@ -61,10 +62,12 @@
     .edit-mode .form-actions {
         display: flex !important;
     }
-    .edit-mode #editProfileBtn {
+    .edit-mode #editBasicInfoBtn,
+    .edit-mode #editAddressInfoBtn {
         display: none !important;
     }
-    #editProfileBtn {
+    #editBasicInfoBtn,
+    #editAddressInfoBtn {
         display: block;
     }
     /* Password section styles */
@@ -150,9 +153,16 @@
     <h2 class="fw-bold mb-4">Profile</h2>
 
     <!-- Success Messages -->
-    {% if profile_success %}
+    {% if basic_info_success %}
     <div class="alert alert-success alert-dismissible fade show" role="alert">
-        <strong>Success!</strong> Your profile has been updated successfully.
+        <strong>Success!</strong> Your basic information has been updated successfully.
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+    {% endif %}
+
+    {% if address_info_success %}
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+        <strong>Success!</strong> Your address information has been updated successfully.
         <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
     </div>
     {% endif %}
@@ -179,27 +189,27 @@
         </div>
     </div>
 
-    <!-- Personal Information -->
-    <div class="profile-section" id="profileSection">
+    <!-- Basic Information Section -->
+    <div class="profile-section" id="basicInfoSection">
         <div class="profile-header d-flex justify-content-between align-items-center">
-            <h4 class="fw-bold mb-0">Personal Information</h4>
-            <button type="button" class="btn btn-outline-primary btn-sm" id="editProfileBtn">
+            <h4 class="fw-bold mb-0">Basic Information</h4>
+            <button type="button" class="btn btn-outline-primary btn-sm" id="editBasicInfoBtn">
                 <span class="material-symbols-outlined" style="font-size: 18px; vertical-align: middle;">edit</span>
-                Edit Profile
+                Edit
             </button>
         </div>
 
-        <form method="POST" id="profileForm">
+        <form method="POST" id="basicInfoForm">
             {% csrf_token %}
-            <input type="hidden" name="update_profile" value="1">
+            <input type="hidden" name="update_basic_info" value="1">
 
             <div class="info-row">
                 <span class="info-label">Owner Name:</span>
                 <span class="info-value">{{ user.first_name|default:"—" }}</span>
-                {{ profile_form.first_name }}
-                {% if profile_form.first_name.errors %}
+                {{ basic_info_form.first_name }}
+                {% if basic_info_form.first_name.errors %}
                     <div class="invalid-feedback d-block">
-                        {% for error in profile_form.first_name.errors %}
+                        {% for error in basic_info_form.first_name.errors %}
                             {{ error }}
                         {% endfor %}
                     </div>
@@ -209,10 +219,10 @@
             <div class="info-row">
                 <span class="info-label">Service Center Name:</span>
                 <span class="info-value">{{ user.last_name|default:"—" }}</span>
-                {{ profile_form.last_name }}
-                {% if profile_form.last_name.errors %}
+                {{ basic_info_form.last_name }}
+                {% if basic_info_form.last_name.errors %}
                     <div class="invalid-feedback d-block">
-                        {% for error in profile_form.last_name.errors %}
+                        {% for error in basic_info_form.last_name.errors %}
                             {{ error }}
                         {% endfor %}
                     </div>
@@ -223,9 +233,9 @@
                 <span class="info-label">Email:</span>
                 <span class="info-value">{{ user.email }}</span>
                 <input type="email" name="email" value="{{ user.email }}" class="form-control" readonly disabled style="display: none;">
-                {% if profile_form.email.errors %}
+                {% if basic_info_form.email.errors %}
                     <div class="invalid-feedback d-block">
-                        {% for error in profile_form.email.errors %}
+                        {% for error in basic_info_form.email.errors %}
                             {{ error }}
                         {% endfor %}
                     </div>
@@ -235,89 +245,10 @@
             <div class="info-row">
                 <span class="info-label">Phone Number:</span>
                 <span class="info-value">{{ user.phone }}</span>
-                {{ profile_form.phone }}
-                {% if profile_form.phone.errors %}
+                {{ basic_info_form.phone }}
+                {% if basic_info_form.phone.errors %}
                     <div class="invalid-feedback d-block">
-                        {% for error in profile_form.phone.errors %}
-                            {{ error }}
-                        {% endfor %}
-                    </div>
-                {% endif %}
-            </div>
-
-            <div class="info-row">
-                <span class="info-label">Address:</span>
-                <span class="info-value {% if not user.address %}empty{% endif %}">{{ user.address|default:"Not provided" }}</span>
-                {{ profile_form.address }}
-                {% if profile_form.address.errors %}
-                    <div class="invalid-feedback d-block">
-                        {% for error in profile_form.address.errors %}
-                            {{ error }}
-                        {% endfor %}
-                    </div>
-                {% endif %}
-            </div>
-
-            <div class="info-row">
-                <span class="info-label">City:</span>
-                <span class="info-value {% if not user.city %}empty{% endif %}">{{ user.city|default:"Not provided" }}</span>
-                {{ profile_form.city }}
-                {% if profile_form.city.errors %}
-                    <div class="invalid-feedback d-block">
-                        {% for error in profile_form.city.errors %}
-                            {{ error }}
-                        {% endfor %}
-                    </div>
-                {% endif %}
-            </div>
-
-            <div class="info-row">
-                <span class="info-label">State:</span>
-                <span class="info-value {% if not user.state %}empty{% endif %}">{{ user.state|default:"Not provided" }}</span>
-                {{ profile_form.state }}
-                {% if profile_form.state.errors %}
-                    <div class="invalid-feedback d-block">
-                        {% for error in profile_form.state.errors %}
-                            {{ error }}
-                        {% endfor %}
-                    </div>
-                {% endif %}
-            </div>
-
-            <div class="info-row">
-                <span class="info-label">Pincode:</span>
-                <span class="info-value {% if not user.pincode %}empty{% endif %}">{{ user.pincode|default:"Not provided" }}</span>
-                {{ profile_form.pincode }}
-                {% if profile_form.pincode.errors %}
-                    <div class="invalid-feedback d-block">
-                        {% for error in profile_form.pincode.errors %}
-                            {{ error }}
-                        {% endfor %}
-                    </div>
-                {% endif %}
-            </div>
-
-            <!-- Servicer-specific fields -->
-            <div class="info-row">
-                <span class="info-label">Location:</span>
-                <span class="info-value {% if not user.location %}empty{% endif %}">{{ user.location|default:"Not provided" }}</span>
-                {{ profile_form.location }}
-                {% if profile_form.location.errors %}
-                    <div class="invalid-feedback d-block">
-                        {% for error in profile_form.location.errors %}
-                            {{ error }}
-                        {% endfor %}
-                    </div>
-                {% endif %}
-            </div>
-
-            <div class="info-row">
-                <span class="info-label">Work Types:</span>
-                <span class="info-value {% if not user.work_types %}empty{% endif %}">{{ user.work_types|default:"Not provided" }}</span>
-                {{ profile_form.work_types }}
-                {% if profile_form.work_types.errors %}
-                    <div class="invalid-feedback d-block">
-                        {% for error in profile_form.work_types.errors %}
+                        {% for error in basic_info_form.phone.errors %}
                             {{ error }}
                         {% endfor %}
                     </div>
@@ -327,10 +258,10 @@
             <div class="info-row">
                 <span class="info-label">Available Time:</span>
                 <span class="info-value {% if not user.available_time %}empty{% endif %}">{{ user.available_time|default:"Not provided" }}</span>
-                {{ profile_form.available_time }}
-                {% if profile_form.available_time.errors %}
+                {{ basic_info_form.available_time }}
+                {% if basic_info_form.available_time.errors %}
                     <div class="invalid-feedback d-block">
-                        {% for error in profile_form.available_time.errors %}
+                        {% for error in basic_info_form.available_time.errors %}
                             {{ error }}
                         {% endfor %}
                     </div>
@@ -339,9 +270,99 @@
 
             <div class="d-flex gap-2 mt-3 form-actions">
                 <button type="submit" class="btn btn-primary">Save Changes</button>
-                <button type="button" class="btn btn-secondary" id="cancelEditBtn">Cancel</button>
+                <button type="button" class="btn btn-secondary" id="cancelBasicInfoBtn">Cancel</button>
             </div>
         </form>
+    </div>
+
+    <!-- Address Information Section -->
+    <div class="profile-section" id="addressInfoSection">
+        <div class="profile-header d-flex justify-content-between align-items-center">
+            <h4 class="fw-bold mb-0">Address Information</h4>
+            <button type="button" class="btn btn-outline-primary btn-sm" id="editAddressInfoBtn">
+                <span class="material-symbols-outlined" style="font-size: 18px; vertical-align: middle;">edit</span>
+                Edit
+            </button>
+        </div>
+
+        <form method="POST" id="addressInfoForm">
+            {% csrf_token %}
+            <input type="hidden" name="update_address_info" value="1">
+
+            <div class="info-row">
+                <span class="info-label">Address:</span>
+                <span class="info-value {% if not user.address %}empty{% endif %}">{{ user.address|default:"Not provided" }}</span>
+                {{ address_info_form.address }}
+                {% if address_info_form.address.errors %}
+                    <div class="invalid-feedback d-block">
+                        {% for error in address_info_form.address.errors %}
+                            {{ error }}
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            </div>
+
+            <div class="info-row">
+                <span class="info-label">City:</span>
+                <span class="info-value {% if not user.city %}empty{% endif %}">{{ user.city|default:"Not provided" }}</span>
+                {{ address_info_form.city }}
+                {% if address_info_form.city.errors %}
+                    <div class="invalid-feedback d-block">
+                        {% for error in address_info_form.city.errors %}
+                            {{ error }}
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            </div>
+
+            <div class="info-row">
+                <span class="info-label">State:</span>
+                <span class="info-value {% if not user.state %}empty{% endif %}">{{ user.state|default:"Not provided" }}</span>
+                {{ address_info_form.state }}
+                {% if address_info_form.state.errors %}
+                    <div class="invalid-feedback d-block">
+                        {% for error in address_info_form.state.errors %}
+                            {{ error }}
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            </div>
+
+            <div class="info-row">
+                <span class="info-label">Pincode:</span>
+                <span class="info-value {% if not user.pincode %}empty{% endif %}">{{ user.pincode|default:"Not provided" }}</span>
+                {{ address_info_form.pincode }}
+                {% if address_info_form.pincode.errors %}
+                    <div class="invalid-feedback d-block">
+                        {% for error in address_info_form.pincode.errors %}
+                            {{ error }}
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            </div>
+
+            <div class="d-flex gap-2 mt-3 form-actions">
+                <button type="submit" class="btn btn-primary">Save Changes</button>
+                <button type="button" class="btn btn-secondary" id="cancelAddressInfoBtn">Cancel</button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Servicer-specific Information (Read-only) -->
+    <div class="profile-section">
+        <div class="profile-header">
+            <h4 class="fw-bold mb-0">Service Center Information</h4>
+        </div>
+        <div class="info-row">
+            <span class="info-label">Location:</span>
+            <span class="info-value {% if not user.location %}empty{% endif %}">{{ user.location|default:"Not provided" }}</span>
+            <small class="text-muted d-block mt-1" style="font-size: 0.85rem;">Location is set during registration and cannot be changed</small>
+        </div>
+        <div class="info-row">
+            <span class="info-label">Work Types:</span>
+            <span class="info-value {% if not user.work_types %}empty{% endif %}">{{ user.work_types|default:"Not provided" }}</span>
+            <small class="text-muted d-block mt-1" style="font-size: 0.85rem;">Type of work is set during registration and cannot be changed</small>
+        </div>
     </div>
 
     <!-- Change Password -->
@@ -358,10 +379,19 @@
             <div class="password-fields">
                 <div class="mb-3">
                     <label class="form-label">Current Password</label>
-                    {{ password_form.current_password }}
-                    {% if password_form.current_password.errors %}
+                    <div class="password-toggle-wrapper">
+                      <div class="position-relative">
+                        {{ password_form.old_password }}
+                        <button type="button"
+                                class="btn bg-transparent border-0 position-absolute top-50 end-0 translate-middle-y me-2 password-toggle-icon"
+                                aria-label="Toggle password visibility">
+                            <i class="bi bi-eye"></i>
+                        </button>
+                      </div>
+                    </div>
+                    {% if password_form.old_password.errors %}
                         <div class="invalid-feedback d-block">
-                            {% for error in password_form.current_password.errors %}
+                            {% for error in password_form.old_password.errors %}
                                 {{ error }}
                             {% endfor %}
                         </div>
@@ -373,7 +403,16 @@
                         <label class="form-label mb-1">New Password</label>
                         <span class="info-icon" id="password-info-btn" title="Show password requirements">i</span>
                     </div>
-                    {{ password_form.new_password1 }}
+                    <div class="password-toggle-wrapper">
+                      <div class="position-relative">
+                        {{ password_form.new_password1 }}
+                        <button type="button"
+                                class="btn bg-transparent border-0 position-absolute top-50 end-0 translate-middle-y me-2 password-toggle-icon"
+                                aria-label="Toggle password visibility">
+                            <i class="bi bi-eye"></i>
+                        </button>
+                      </div>
+                    </div>
                     {% if password_form.new_password1.errors %}
                         <div class="invalid-feedback d-block">
                             {% for error in password_form.new_password1.errors %}
@@ -396,7 +435,16 @@
 
                 <div class="mb-3">
                     <label class="form-label">Confirm New Password</label>
-                    {{ password_form.new_password2 }}
+                    <div class="password-toggle-wrapper">
+                      <div class="position-relative">
+                        {{ password_form.new_password2 }}
+                        <button type="button"
+                                class="btn bg-transparent border-0 position-absolute top-50 end-0 translate-middle-y me-2 password-toggle-icon"
+                                aria-label="Toggle password visibility">
+                            <i class="bi bi-eye"></i>
+                        </button>
+                      </div>
+                    </div>
                     <div class="invalid-feedback" id="password-match-error" style="display: none !important;">
                         Passwords do not match.
                     </div>
@@ -434,73 +482,151 @@
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     // Store original values for cancel functionality
-    let originalValues = {};
+    let basicInfoOriginalValues = {};
+    let addressInfoOriginalValues = {};
 
-    // Profile Edit Toggle
-    const editBtn = document.getElementById('editProfileBtn');
-    const cancelBtn = document.getElementById('cancelEditBtn');
-    const profileForm = document.getElementById('profileForm');
-    const profileSection = document.getElementById('profileSection');
-    const formActions = profileForm.querySelector('.form-actions');
+    // Basic Info Edit Toggle
+    const editBasicInfoBtn = document.getElementById('editBasicInfoBtn');
+    const cancelBasicInfoBtn = document.getElementById('cancelBasicInfoBtn');
+    const basicInfoForm = document.getElementById('basicInfoForm');
+    const basicInfoSection = document.getElementById('basicInfoSection');
+    const basicInfoFormActions = basicInfoForm ? basicInfoForm.querySelector('.form-actions') : null;
+    
+    // Address Info Edit Toggle
+    const editAddressInfoBtn = document.getElementById('editAddressInfoBtn');
+    const cancelAddressInfoBtn = document.getElementById('cancelAddressInfoBtn');
+    const addressInfoForm = document.getElementById('addressInfoForm');
+    const addressInfoSection = document.getElementById('addressInfoSection');
+    const addressInfoFormActions = addressInfoForm ? addressInfoForm.querySelector('.form-actions') : null;
     
     // Ensure form actions are hidden on page load
-    if (formActions) {
-        formActions.style.display = 'none';
+    if (basicInfoFormActions) {
+        basicInfoFormActions.style.display = 'none';
+    }
+    if (addressInfoFormActions) {
+        addressInfoFormActions.style.display = 'none';
     }
 
-    function enterEditMode() {
-        profileSection.classList.add('edit-mode');
+    function enterBasicInfoEditMode() {
+        if (!basicInfoSection || !basicInfoForm) return;
+        basicInfoSection.classList.add('edit-mode');
         
         // Store original values
-        profileForm.querySelectorAll('.form-control').forEach(el => {
-            if (el.name && el.name !== 'email') { // Skip email field
+        basicInfoForm.querySelectorAll('.form-control').forEach(el => {
+            if (el.name && el.name !== 'email') {
                 const valueEl = el.closest('.info-row').querySelector('.info-value');
-                const originalValue = valueEl.textContent.trim();
-                originalValues[el.name] = originalValue === '—' || originalValue === 'Not provided' ? '' : originalValue;
+                const originalValue = valueEl ? valueEl.textContent.trim() : '';
+                basicInfoOriginalValues[el.name] = originalValue === '—' || originalValue === 'Not provided' ? '' : originalValue;
                 
                 // Show form control and set value
                 el.style.display = 'block';
-                if (el.value === '' && originalValues[el.name] !== '') {
-                    el.value = originalValues[el.name];
+                if (el.value === '' && basicInfoOriginalValues[el.name] !== '') {
+                    el.value = basicInfoOriginalValues[el.name];
                 }
             }
         });
         
         // Ensure form actions are visible in edit mode
-        formActions.style.display = 'flex';
+        if (basicInfoFormActions) {
+            basicInfoFormActions.style.display = 'flex';
+        }
     }
 
-    function exitEditMode() {
-        profileSection.classList.remove('edit-mode');
+    function exitBasicInfoEditMode() {
+        if (!basicInfoSection || !basicInfoForm) return;
+        basicInfoSection.classList.remove('edit-mode');
         
         // Restore original values
-        profileForm.querySelectorAll('.form-control').forEach(el => {
-            if (el.name && el.name !== 'email') { // Skip email field
+        basicInfoForm.querySelectorAll('.form-control').forEach(el => {
+            if (el.name && el.name !== 'email') {
                 el.style.display = 'none';
-                if (originalValues.hasOwnProperty(el.name)) {
-                    el.value = originalValues[el.name] || '';
+                if (basicInfoOriginalValues.hasOwnProperty(el.name)) {
+                    el.value = basicInfoOriginalValues[el.name] || '';
                 }
             }
         });
         
         // Hide form actions
-        formActions.style.display = 'none';
+        if (basicInfoFormActions) {
+            basicInfoFormActions.style.display = 'none';
+        }
         
         // Clear error messages
-        profileForm.querySelectorAll('.invalid-feedback').forEach(el => {
+        basicInfoForm.querySelectorAll('.invalid-feedback').forEach(el => {
             el.style.display = 'none';
         });
         
         // Clear stored values
-        originalValues = {};
+        basicInfoOriginalValues = {};
     }
 
-    if (editBtn) {
-        editBtn.addEventListener('click', enterEditMode);
+    function enterAddressInfoEditMode() {
+        if (!addressInfoSection || !addressInfoForm) return;
+        addressInfoSection.classList.add('edit-mode');
+        
+        // Store original values
+        addressInfoForm.querySelectorAll('.form-control').forEach(el => {
+            if (el.name) {
+                const valueEl = el.closest('.info-row').querySelector('.info-value');
+                const originalValue = valueEl ? valueEl.textContent.trim() : '';
+                addressInfoOriginalValues[el.name] = originalValue === '—' || originalValue === 'Not provided' ? '' : originalValue;
+                
+                // Show form control and set value
+                el.style.display = 'block';
+                if (el.value === '' && addressInfoOriginalValues[el.name] !== '') {
+                    el.value = addressInfoOriginalValues[el.name];
+                }
+            }
+        });
+        
+        // Ensure form actions are visible in edit mode
+        if (addressInfoFormActions) {
+            addressInfoFormActions.style.display = 'flex';
+        }
     }
 
-    if (cancelBtn) {
-        cancelBtn.addEventListener('click', exitEditMode);
+    function exitAddressInfoEditMode() {
+        if (!addressInfoSection || !addressInfoForm) return;
+        addressInfoSection.classList.remove('edit-mode');
+        
+        // Restore original values
+        addressInfoForm.querySelectorAll('.form-control').forEach(el => {
+            if (el.name) {
+                el.style.display = 'none';
+                if (addressInfoOriginalValues.hasOwnProperty(el.name)) {
+                    el.value = addressInfoOriginalValues[el.name] || '';
+                }
+            }
+        });
+        
+        // Hide form actions
+        if (addressInfoFormActions) {
+            addressInfoFormActions.style.display = 'none';
+        }
+        
+        // Clear error messages
+        addressInfoForm.querySelectorAll('.invalid-feedback').forEach(el => {
+            el.style.display = 'none';
+        });
+        
+        // Clear stored values
+        addressInfoOriginalValues = {};
+    }
+
+    if (editBasicInfoBtn) {
+        editBasicInfoBtn.addEventListener('click', enterBasicInfoEditMode);
+    }
+
+    if (cancelBasicInfoBtn) {
+        cancelBasicInfoBtn.addEventListener('click', exitBasicInfoEditMode);
+    }
+
+    if (editAddressInfoBtn) {
+        editAddressInfoBtn.addEventListener('click', enterAddressInfoEditMode);
+    }
+
+    if (cancelAddressInfoBtn) {
+        cancelAddressInfoBtn.addEventListener('click', exitAddressInfoEditMode);
     }
 
     // Password Change Toggle
@@ -567,9 +693,69 @@ document.addEventListener('DOMContentLoaded', function() {
         changePasswordBtn.style.display = 'block';
     }
 
-    if (changePasswordBtn) {
-        changePasswordBtn.addEventListener('click', showPasswordFields);
+    // Reusable password toggle function
+    function initPasswordToggle(passwordInputId, toggleButton) {
+        const passwordInput = document.getElementById(passwordInputId);
+        if (!passwordInput || !toggleButton) return;
+        
+        const eyeIcon = toggleButton.querySelector('i');
+        
+        toggleButton.addEventListener('click', function() {
+            if (passwordInput.type === 'password') {
+                passwordInput.type = 'text';
+                eyeIcon.className = 'bi bi-eye-slash';
+            } else {
+                passwordInput.type = 'password';
+                eyeIcon.className = 'bi bi-eye';
+            }
+        });
+        
+        // Keyboard accessibility
+        toggleButton.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                toggleButton.click();
+            }
+        });
     }
+
+    // Initialize password toggles
+    function initAllPasswordToggles() {
+        const oldPasswordInput = document.getElementById('id_old_password');
+        const newPassword1Input = document.getElementById('id_new_password1');
+        const newPassword2Input = document.getElementById('id_new_password2');
+        
+        if (oldPasswordInput) {
+            const toggle = oldPasswordInput.closest('.password-toggle-wrapper')?.querySelector('.password-toggle-icon');
+            if (toggle) initPasswordToggle('id_old_password', toggle);
+        }
+        if (newPassword1Input) {
+            const toggle = newPassword1Input.closest('.password-toggle-wrapper')?.querySelector('.password-toggle-icon');
+            if (toggle) initPasswordToggle('id_new_password1', toggle);
+        }
+        if (newPassword2Input) {
+            const toggle = newPassword2Input.closest('.password-toggle-wrapper')?.querySelector('.password-toggle-icon');
+            if (toggle) initPasswordToggle('id_new_password2', toggle);
+        }
+    }
+
+    if (changePasswordBtn) {
+        changePasswordBtn.addEventListener('click', function() {
+            showPasswordFields();
+            // Initialize password toggles when password fields are shown
+            setTimeout(initAllPasswordToggles, 100);
+        });
+    }
+    
+    // Initialize password toggles on page load (in case fields are already visible)
+    initAllPasswordToggles();
+    
+    // Ensure Django form fields get proper padding
+    document.querySelectorAll('.password-toggle-wrapper .form-control').forEach(function(input) {
+        if (!input.classList.contains('pe-5')) {
+            input.classList.add('pe-5');
+        }
+    });
 
     if (cancelPasswordBtn) {
         cancelPasswordBtn.addEventListener('click', function(e) {
