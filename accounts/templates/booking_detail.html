@@ -39,6 +39,11 @@
             ">
                 {{ booking.get_status_display }}
             </span>
+            {% if booking.status == 'Completed' and booking.payment_requested %}
+            <span class="badge bg-warning ms-2">
+                <i class="bi bi-credit-card me-1"></i>Payment Requested
+            </span>
+            {% endif %}
         </div>
     </div>
 
@@ -103,6 +108,20 @@
                 </li>
                 {% endif %}
 
+                <!-- Payment Tab (ONLY WHEN COMPLETED AND PAYMENT REQUESTED) -->
+                {% if booking.status == 'Completed' and booking.payment_requested %}
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link"
+                            id="payment-tab"
+                            data-bs-toggle="tab"
+                            data-bs-target="#payment"
+                            type="button"
+                            role="tab">
+                        <i class="bi bi-credit-card me-1"></i>Payment
+                    </button>
+                </li>
+                {% endif %}
+
             </ul>
 
 <div class="tab-content">
@@ -113,30 +132,38 @@
          role="tabpanel">
 
         <div class="bg-white p-4 rounded shadow-sm">
-            <h6 class="fw-semibold mb-3">Work Progress Timeline</h6>
+            <h6 class="fw-semibold mb-3">
+                <i class="bi bi-clock-history me-2"></i>Work Progress Timeline
+            </h6>
             {% if progress %}
-                {% for p in progress %}
-                    <div class="border-start border-primary border-3 ps-3 mb-4">
-                        <div class="d-flex justify-content-between align-items-start mb-2">
-                            <h6 class="fw-semibold mb-0">{{ p.title }}</h6>
-                            <span class="badge 
-                                {% if p.status == 'Pending' %}bg-secondary
-                                {% elif p.status == 'In Progress' %}bg-primary
-                                {% elif p.status == 'Completed' %}bg-success
-                                {% endif %}
-                            ">
-                                {{ p.get_status_display }}
-                            </span>
+                <div class="timeline">
+                    {% for p in progress %}
+                        <div class="border-start border-primary border-3 ps-4 mb-4 position-relative">
+                            <!-- Timeline dot -->
+                            <span class="position-absolute top-0 start-0 translate-middle bg-primary rounded-circle" style="width: 12px; height: 12px; margin-left: -6px;"></span>
+                            
+                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                <h6 class="fw-semibold mb-0">{{ p.title }}</h6>
+                                <span class="badge 
+                                    {% if p.status == 'Pending' %}bg-secondary
+                                    {% elif p.status == 'In Progress' %}bg-primary
+                                    {% elif p.status == 'Completed' %}bg-success
+                                    {% endif %}
+                                ">
+                                    {{ p.get_status_display }}
+                                </span>
+                            </div>
+                            <p class="mb-2 text-muted">{{ p.description }}</p>
+                            <small class="text-muted d-flex align-items-center">
+                                <i class="bi bi-clock me-1"></i>
+                                {{ p.updated_at|date:"M d, Y h:i A" }}
+                            </small>
                         </div>
-                        <p class="mb-2">{{ p.description }}</p>
-                        <small class="text-muted">
-                            <span class="material-symbols-outlined" style="font-size: 14px; vertical-align: middle;">schedule</span>
-                            {{ p.updated_at|date:"M d, Y h:i A" }}
-                        </small>
-                    </div>
-                {% endfor %}
+                    {% endfor %}
+                </div>
             {% else %}
                 <div class="text-center py-4">
+                    <i class="bi bi-inbox fs-1 text-muted mb-3 d-block"></i>
                     <p class="text-muted mb-0">No progress updates yet.</p>
                     <small class="text-muted">Progress updates will appear here as work progresses.</small>
                 </div>
@@ -224,7 +251,47 @@
             </div>
             {% endif %}
 
-        </div>
+          </div>
+
+          <!-- Payment Request Section (ONLY WHEN COMPLETED) -->
+          {% if booking.status == 'Completed' and booking.payment_requested %}
+          <div class="tab-pane fade" id="payment" role="tabpanel">
+              <div class="bg-white p-4 rounded shadow-sm">
+                  <div class="alert alert-warning mb-4">
+                      <h6 class="fw-semibold mb-2">
+                          <i class="bi bi-credit-card me-2"></i>Payment Request
+                      </h6>
+                      <p class="mb-0">The servicer has requested payment for the completed service.</p>
+                  </div>
+                  
+                  <div class="card border-primary">
+                      <div class="card-header bg-primary text-white">
+                          <h6 class="mb-0 fw-semibold">Payment Details</h6>
+                      </div>
+                      <div class="card-body">
+                          {% if booking.final_amount %}
+                          <div class="mb-3">
+                              <h5 class="fw-bold text-primary">₹{{ booking.final_amount }}</h5>
+                              <p class="text-muted mb-0">Final Amount</p>
+                          </div>
+                          {% endif %}
+                          
+                          {% if booking.completion_notes %}
+                          <div class="mb-3">
+                              <h6 class="fw-semibold">Completion Notes:</h6>
+                              <p class="text-muted">{{ booking.completion_notes }}</p>
+                          </div>
+                          {% endif %}
+                          
+                          <div class="alert alert-info mb-0">
+                              <i class="bi bi-info-circle me-2"></i>
+                              Please contact the service center to complete the payment.
+                          </div>
+                      </div>
+                  </div>
+              </div>
+          </div>
+          {% endif %}
 
     </div>
 </div>

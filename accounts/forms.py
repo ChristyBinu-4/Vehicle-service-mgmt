@@ -1048,37 +1048,72 @@ class DiagnosisForm(forms.ModelForm):
 
 
 class ProgressUpdateForm(forms.ModelForm):
-    """Form for adding work progress updates."""
+    """
+    Form for adding work progress updates.
+    
+    Fields:
+    - title: Short summary of the progress update (required)
+    - description: Detailed work update (required)
+    
+    Note: status is automatically set to "In Progress" in the view.
+    """
     class Meta:
         model = WorkProgress
-        fields = ['title', 'description', 'status']
+        fields = ['title', 'description']
         widgets = {
             'title': forms.TextInput(attrs={
                 'class': 'form-control',
-                'placeholder': 'Enter progress title...',
+                'placeholder': 'e.g., Engine repair started, Oil change completed',
             }),
             'description': forms.Textarea(attrs={
                 'class': 'form-control',
-                'rows': 4,
-                'placeholder': 'Enter progress description...',
-            }),
-            'status': forms.Select(attrs={
-                'class': 'form-select'
+                'rows': 6,
+                'placeholder': 'Enter detailed progress update...',
             }),
         }
+        labels = {
+            'title': 'Progress Title',
+            'description': 'Progress Description',
+        }
+        help_texts = {
+            'title': 'A short summary of what work has been done',
+            'description': 'Detailed description of the progress made',
+        }
+    
+    def clean_title(self):
+        """Validate title is not empty."""
+        title = self.cleaned_data.get('title', '')
+        if not title or not title.strip():
+            raise forms.ValidationError("Progress title is required.")
+        return title.strip()
+    
+    def clean_description(self):
+        """Validate description is not empty."""
+        description = self.cleaned_data.get('description', '')
+        if not description or not description.strip():
+            raise forms.ValidationError("Progress description is required.")
+        return description.strip()
 
 
 class CompleteWorkForm(forms.Form):
-    """Form for completing work."""
+    """
+    Form for marking work as completed and requesting payment.
+    
+    Fields:
+    - completion_notes: Optional notes about the completion (optional)
+    - final_amount: Final payment amount (required)
+    
+    Note: Payment is automatically requested when work is marked as completed.
+    """
     completion_notes = forms.CharField(
         required=False,
         widget=forms.Textarea(attrs={
             'class': 'form-control',
-            'rows': 4,
+            'rows': 5,
             'placeholder': 'Enter completion notes (optional)...',
-        })
+        }),
+        help_text='Optional: Add any notes about the completed work'
     )
-    
     final_amount = forms.DecimalField(
         required=True,
         max_digits=10,
@@ -1088,10 +1123,19 @@ class CompleteWorkForm(forms.Form):
             'placeholder': '0.00',
             'step': '0.01'
         }),
+        help_text='Enter the final payment amount in ₹',
+        label='Final Payment Amount (₹)',
         error_messages={
             'required': 'Please enter the final amount.'
         }
     )
+    
+    def clean_final_amount(self):
+        """Validate final amount is positive."""
+        final_amount = self.cleaned_data.get('final_amount')
+        if final_amount is not None and final_amount <= 0:
+            raise forms.ValidationError("Final amount must be greater than zero.")
+        return final_amount
 
 
 class FeedbackForm(forms.ModelForm):

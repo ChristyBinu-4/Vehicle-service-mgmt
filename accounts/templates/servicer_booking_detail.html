@@ -203,16 +203,12 @@
         </div>
         {% endif %}
         
-        <!-- Payment request -->
-        {% if not booking.payment_requested %}
+        <!-- Payment request status -->
+        {% if booking.payment_requested %}
         <div class="detail-card">
-            <a href="{% url 'request_payment' booking.id %}" class="btn btn-primary">
-                Request Payment
-            </a>
-        </div>
-        {% else %}
-        <div class="detail-card">
-            <div class="alert alert-info">
+            <div class="alert alert-success">
+                <i class="bi bi-check-circle me-2"></i>
+                <strong>Payment Request Sent</strong><br>
                 Payment request has been sent to the user. Waiting for payment...
             </div>
         </div>

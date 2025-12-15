@@ -263,7 +263,8 @@ def booking_detail(request, booking_id):
     booking = get_object_or_404(Booking, id=booking_id, user=request.user)
 
     # Work progress timeline - ordered by updated_at (most recent first)
-    progress = WorkProgress.objects.filter(booking=booking).order_by("-updated_at")
+    # Get progress updates in chronological order (oldest first for timeline)
+    progress = WorkProgress.objects.filter(booking=booking).order_by("updated_at")
 
     complaint_list = booking.complaints.split(" || ") if booking.complaints else []
 
@@ -897,30 +898,72 @@ def create_diagnosis(request, booking_id):
 def add_progress_update(request, booking_id):
     """
     Add a progress update for ongoing work.
+    
+    Preconditions:
+    - Servicer is authenticated (enforced by decorators)
+    - Booking belongs to this servicer
+    - booking.status == "Ongoing"
+    - Diagnosis exists and has been approved by user (user_approved == True)
+    
+    On submit:
+    - Create WorkProgress entry linked to booking
+    - Set WorkProgress.status = "In Progress" (automatically)
+    - Do NOT change booking.status (remains "Ongoing")
+    - Record updated_at timestamp (auto_now=True)
     """
     # Get servicer
     try:
         servicer = Servicer.objects.get(email=request.user.email)
     except Servicer.DoesNotExist:
-        messages.error(request, "Servicer profile not found.")
+        messages.error(request, "Servicer profile not found. Please contact support.")
         return redirect("servicer_worklist")
     
-    booking = get_object_or_404(Booking, id=booking_id, servicer=servicer, status='Ongoing')
+    # Validate booking belongs to servicer
+    booking = get_object_or_404(Booking, id=booking_id, servicer=servicer)
+    
+    # Precondition: Only allow progress updates for Ongoing bookings
+    if booking.status != 'Ongoing':
+        messages.error(request, f"Cannot add progress update. Booking status must be Ongoing. Current status: {booking.get_status_display()}")
+        return redirect("servicer_worklist?tab=ongoing")
+    
+    # Precondition: Diagnosis must exist and be approved by user
+    if not hasattr(booking, 'diagnosis'):
+        messages.error(request, "Cannot add progress update. Diagnosis must be submitted and approved first.")
+        return redirect("servicer_booking_detail", booking_id=booking.id)
+    
+    diagnosis = booking.diagnosis
+    if not diagnosis.user_approved:
+        messages.error(request, "Cannot add progress update. Diagnosis must be approved by the user first.")
+        return redirect("servicer_booking_detail", booking_id=booking.id)
     
     if request.method == "POST":
         form = ProgressUpdateForm(request.POST)
         if form.is_valid():
+            # Double-check status hasn't changed (race condition protection)
+            booking.refresh_from_db()
+            if booking.status != 'Ongoing':
+                messages.error(request, "Booking status has changed. Cannot add progress update.")
+                return redirect("servicer_booking_detail", booking_id=booking.id)
+            
+            # Create progress update
             progress = form.save(commit=False)
             progress.booking = booking
+            # Set status automatically to "In Progress"
+            progress.status = "In Progress"
             progress.save()
+            
             messages.success(request, "Progress update added successfully!")
             return redirect("servicer_booking_detail", booking_id=booking_id)
     else:
         form = ProgressUpdateForm()
     
+    # Get complaint list for display
+    complaint_list = booking.complaints.split(" || ") if booking.complaints else []
+    
     return render(request, "servicer_add_progress.html", {
         'booking': booking,
         'form': form,
+        'complaint_list': complaint_list,
     })
 
 
@@ -929,32 +972,99 @@ def add_progress_update(request, booking_id):
 def mark_work_completed(request, booking_id):
     """
     Mark work as completed and request payment.
-    Moves status from Ongoing to Completed.
+    
+    Preconditions:
+    - Servicer is authenticated (enforced by decorators)
+    - Booking belongs to this servicer
+    - booking.status == "Ongoing"
+    - At least one WorkProgress entry exists
+    
+    On submit:
+    - Update booking.status → "Completed"
+    - Create WorkProgress entry: "Service Completed"
+    - Set payment_requested = True
+    - Set final_amount (from form or diagnosis estimate)
+    - Save completion_notes (optional)
+    - Redirect to servicer worklist
     """
     # Get servicer
     try:
         servicer = Servicer.objects.get(email=request.user.email)
     except Servicer.DoesNotExist:
-        messages.error(request, "Servicer profile not found.")
+        messages.error(request, "Servicer profile not found. Please contact support.")
         return redirect("servicer_worklist")
     
-    booking = get_object_or_404(Booking, id=booking_id, servicer=servicer, status='Ongoing')
+    # Validate booking belongs to servicer
+    booking = get_object_or_404(Booking, id=booking_id, servicer=servicer)
+    
+    # Precondition: Only allow completion for Ongoing bookings
+    if booking.status != 'Ongoing':
+        messages.error(request, f"Cannot mark as completed. Booking status must be Ongoing. Current status: {booking.get_status_display()}")
+        return redirect("servicer_worklist?tab=ongoing")
+    
+    # Precondition: At least one WorkProgress entry must exist
+    progress_count = WorkProgress.objects.filter(booking=booking).count()
+    if progress_count == 0:
+        messages.error(request, "Cannot mark as completed. At least one progress update must be added first.")
+        return redirect("servicer_booking_detail", booking_id=booking.id)
+    
+    # Precondition: Prevent re-completing an already completed booking
+    if booking.status == 'Completed':
+        messages.warning(request, "This booking is already marked as completed.")
+        return redirect("servicer_booking_detail", booking_id=booking.id)
+    
+    # Get diagnosis to pre-fill estimated cost if available
+    diagnosis = None
+    estimated_cost = None
+    if hasattr(booking, 'diagnosis'):
+        diagnosis = booking.diagnosis
+        estimated_cost = diagnosis.estimated_cost
     
     if request.method == "POST":
-        form = CompleteWorkForm(request.POST)
+        form = CompleteWorkForm(request.POST, initial={'final_amount': estimated_cost})
         if form.is_valid():
+            # Double-check status hasn't changed (race condition protection)
+            booking.refresh_from_db()
+            if booking.status != 'Ongoing':
+                messages.error(request, "Booking status has changed. Cannot mark as completed.")
+                return redirect("servicer_booking_detail", booking_id=booking.id)
+            
+            # Update booking status to Completed
             booking.status = 'Completed'
             booking.completion_notes = form.cleaned_data.get('completion_notes', '')
             booking.final_amount = form.cleaned_data['final_amount']
+            # Set payment_requested = True (payment is requested during completion)
+            booking.payment_requested = True
             booking.save()
-            messages.success(request, "Work marked as completed!")
+            
+            # Create WorkProgress entry for completion
+            completion_description = form.cleaned_data.get('completion_notes', '')
+            if not completion_description:
+                completion_description = f"Service completed. Final amount: ₹{booking.final_amount}"
+            else:
+                completion_description = f"{completion_description} (Final amount: ₹{booking.final_amount})"
+            
+            WorkProgress.objects.create(
+                booking=booking,
+                title="Service Completed",
+                description=completion_description,
+                status="Completed"
+            )
+            
+            messages.success(request, "Work marked as completed and payment request sent to user!")
             return redirect("servicer_worklist?tab=completed")
     else:
-        form = CompleteWorkForm()
+        # Pre-fill final_amount with diagnosis estimate if available
+        form = CompleteWorkForm(initial={'final_amount': estimated_cost})
+    
+    # Get complaint list for display
+    complaint_list = booking.complaints.split(" || ") if booking.complaints else []
     
     return render(request, "servicer_complete_work.html", {
         'booking': booking,
         'form': form,
+        'complaint_list': complaint_list,
+        'diagnosis': diagnosis,
     })
 
 
