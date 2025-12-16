@@ -95,8 +95,8 @@
 
                 <div class="mb-3">
                     <label class="form-label">Preferred Date</label>
-                    <input type="date" name="preferred_date" class="form-control"
-                       value="{{ data.preferred_date|default:'' }}">
+                    <input type="date" name="preferred_date" class="form-control" id="preferred_date"
+                       value="{{ data.preferred_date|default:'' }}" min="">
                 </div>
 
                 <div class="mb-3">
@@ -181,6 +181,27 @@ function renderComplaints() {
 
 // Render on page load
 renderComplaints();
+
+// Set minimum date to today for preferred_date field
+document.addEventListener('DOMContentLoaded', function() {
+    const preferredDateInput = document.getElementById('preferred_date');
+    if (preferredDateInput) {
+        // Get today's date in YYYY-MM-DD format
+        const today = new Date();
+        const year = today.getFullYear();
+        const month = String(today.getMonth() + 1).padStart(2, '0');
+        const day = String(today.getDate()).padStart(2, '0');
+        const todayStr = `${year}-${month}-${day}`;
+        
+        // Set min attribute to today's date
+        preferredDateInput.setAttribute('min', todayStr);
+        
+        // If the current value is in the past, clear it
+        if (preferredDateInput.value && preferredDateInput.value < todayStr) {
+            preferredDateInput.value = '';
+        }
+    }
+});
 </script>
 
 {% endblock %}
